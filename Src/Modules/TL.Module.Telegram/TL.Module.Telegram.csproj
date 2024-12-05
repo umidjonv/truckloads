@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="TDLib" Version="1.8.29" />
+      <PackageReference Include="TDLib.Api" Version="1.8.29" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Shared\TL.Shared.Common\TL.Shared.Common.csproj" />
+      <ProjectReference Include="..\..\Shared\TL.Shared.Core\TL.Shared.Core.csproj" />
+    </ItemGroup>
+
+</Project>
