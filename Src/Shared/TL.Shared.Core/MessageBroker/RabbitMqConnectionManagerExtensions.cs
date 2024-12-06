@@ -6,7 +6,7 @@ namespace TL.Shared.Core.MessageBroker;
 
 public static class RabbitMqConnectionManagerExtensions
 {
-    public static IServiceCollection AddRabbitMqService(this IServiceCollection services)
+    public static IServiceCollection AddRabbitMqConnectionManager(this IServiceCollection services)
     {
         services.AddSingleton(async (provider) =>
         {
@@ -14,7 +14,7 @@ public static class RabbitMqConnectionManagerExtensions
             var configurationManager = provider.GetRequiredService<IConfigurationManager>();
             try
             {
-                var rabbit = new RabbitMqConnectionManager(logger, configurationManager);
+                IRabbitMqConnectionManager rabbit = new RabbitMqConnectionManager(logger, configurationManager);
                 await rabbit.Connect();
                 return rabbit;
             }

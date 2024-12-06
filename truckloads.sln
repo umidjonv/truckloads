@@ -14,6 +14,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{7B8B
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TL.Module.Telegram", "Src\Modules\TL.Module.Telegram\TL.Module.Telegram.csproj", "{97086629-60AD-4DF1-A63A-A064A80CCFAB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TL.Module.Telegram.Worker", "Src\Modules\TL.Module.Telegram.Worker\TL.Module.Telegram.Worker.csproj", "{746040F8-1927-456B-9EB9-81955B26A998}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TL.Module.AIProcessing.Worker", "Src\Modules\TL.Module.AIProcessing.Worker\TL.Module.AIProcessing.Worker.csproj", "{6C72C72E-41C2-48C4-BD4E-0DA19ED4A616}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +29,8 @@ Global
 		{333920CE-A5FA-4F3E-BFC9-3E372D6E550A} = {5F8D8ED4-09CC-4D83-891E-F27470EA395F}
 		{7B8B4D75-156F-428B-A950-AA4DF5F47FF7} = {3042A6B8-F0DB-4498-B4F8-9F9A278D96C2}
 		{97086629-60AD-4DF1-A63A-A064A80CCFAB} = {7B8B4D75-156F-428B-A950-AA4DF5F47FF7}
+		{746040F8-1927-456B-9EB9-81955B26A998} = {7B8B4D75-156F-428B-A950-AA4DF5F47FF7}
+		{6C72C72E-41C2-48C4-BD4E-0DA19ED4A616} = {7B8B4D75-156F-428B-A950-AA4DF5F47FF7}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A554651D-8D10-446C-8519-BBD0099E61EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -39,5 +45,13 @@ Global
 		{97086629-60AD-4DF1-A63A-A064A80CCFAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{97086629-60AD-4DF1-A63A-A064A80CCFAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{97086629-60AD-4DF1-A63A-A064A80CCFAB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{746040F8-1927-456B-9EB9-81955B26A998}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{746040F8-1927-456B-9EB9-81955B26A998}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{746040F8-1927-456B-9EB9-81955B26A998}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{746040F8-1927-456B-9EB9-81955B26A998}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C72C72E-41C2-48C4-BD4E-0DA19ED4A616}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C72C72E-41C2-48C4-BD4E-0DA19ED4A616}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C72C72E-41C2-48C4-BD4E-0DA19ED4A616}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C72C72E-41C2-48C4-BD4E-0DA19ED4A616}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
