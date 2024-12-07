@@ -253,5 +253,4 @@ _Pvt_Extensions
 # JetBrains Rider
 .idea/
 *.sln.iml
-/src/UI/appsettings.Development.json
-/src/API/appsettings.Development.json
+appsettings.Development.json
