@@ -88,9 +88,12 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
         await channel.BasicConsumeAsync(queueKey,
             autoAck: false,
             consumer: consumer, cancellationToken: cancellationToken);
+
+        await channel.BasicQosAsync(0, (ushort)Environment.ProcessorCount, false, cancellationToken);
     }
 
     private static int _counter = 0;
+    private static SemaphoreSlim _semaphore = new(47);
 
     private async Task Receive(IChannel channel, BasicDeliverEventArgs ea, CancellationToken cancellationToken)
     {

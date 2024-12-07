@@ -88,6 +88,8 @@ public class InsertMessageConsumer(IServiceScopeFactory serviceScopeFactory) : I
         await channel.BasicConsumeAsync(queueKey,
             autoAck: false,
             consumer: consumer, cancellationToken: cancellationToken);
+
+        await channel.BasicQosAsync(0, (ushort)Environment.ProcessorCount, false, cancellationToken);
     }
 
     private async Task Receive(IChannel channel, BasicDeliverEventArgs ea, CancellationToken cancellationToken)

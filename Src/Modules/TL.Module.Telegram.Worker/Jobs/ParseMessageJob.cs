@@ -65,18 +65,19 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
 
         await Parallel.ForEachAsync(NotSentMessages, parallelOptions, async (_, token) =>
         {
-            try
+            if (NotSentMessages.TryDequeue(out var message))
             {
-                if (NotSentMessages.TryDequeue(out var message))
+                try
                 {
                     await rabbit.PublishAsync(exchangeKey, routingKey, queueKey, message, token);
                 }
-            }
-            catch (Exception e)
-            {
-                logger.LogError("[{0}] Retry publish not sent massage is failed. Details: {1}",
-                    nameof(ParseMessageJob),
-                    e.Message);
+                catch (Exception e)
+                {
+                    logger.LogError("[{0}] Retry publish not sent massage is failed. Details: {1}",
+                        nameof(ParseMessageJob),
+                        e.Message);
+                    NotSentMessages.Enqueue(message);
+                }
             }
         });
     }
