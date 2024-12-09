@@ -22,6 +22,9 @@ public class PostNotifierJob(IServiceScopeFactory serviceScopeFactory) : IPostNo
             foreach (var post in cursor.Current)
             {
                 //TODO: notify subscribers
+                post.IsProcessed = true;
+                var replaceFilter = Builders<PostsCollectionDto>.Filter.Eq(p => p.Id, post.Id);
+                await collection.ReplaceOneAsync(replaceFilter, post, cancellationToken: cancellationToken);
             }
         }
     }
