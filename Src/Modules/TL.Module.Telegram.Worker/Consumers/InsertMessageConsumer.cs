@@ -12,11 +12,6 @@ using TL.Shared.Core.MessageBroker;
 
 namespace TL.Module.Telegram.Worker.Consumers;
 
-public interface IInsertMessageConsumer
-{
-    Task Consume(CancellationToken cancellationToken = default);
-}
-
 public class InsertMessageConsumer(IServiceScopeFactory serviceScopeFactory) : IInsertMessageConsumer
 {
     public async Task Consume(CancellationToken cancellationToken = default)
