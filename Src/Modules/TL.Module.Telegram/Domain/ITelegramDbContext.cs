@@ -6,7 +6,12 @@ namespace TL.Module.Telegram.Domain;
 public interface ITelegramDbContext
 {
     DbSet<TelegramSettings> Settings { get; }
+
     DbSet<TelegramMessage> Messages { get; }
+
+    DbSet<TelegramAllowedChat> AllowedChats { get; set; }
+
+    DbSet<TelegramUser> Users { get; set; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = new());
 

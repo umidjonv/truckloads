@@ -13,4 +13,9 @@
         <PackageReference Include="MongoDB.Bson" Version="3.1.0"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Helpers\" />
+      <Folder Include="Primitives\" />
+    </ItemGroup>
+
 </Project>

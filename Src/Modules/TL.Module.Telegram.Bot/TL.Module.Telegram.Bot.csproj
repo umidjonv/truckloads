@@ -16,4 +16,8 @@
       <ProjectReference Include="..\..\Shared\TL.Shared.Core\TL.Shared.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Handlers\" />
+    </ItemGroup>
+
 </Project>

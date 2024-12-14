@@ -15,6 +15,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Modules\TL.Module.AIProcessing.Worker\TL.Module.AIProcessing.Worker.csproj"/>
+        <ProjectReference Include="..\Modules\TL.Module.Telegram.Bot\TL.Module.Telegram.Bot.csproj" />
         <ProjectReference Include="..\Modules\TL.Module.Telegram.Worker\TL.Module.Telegram.Worker.csproj"/>
     </ItemGroup>
 

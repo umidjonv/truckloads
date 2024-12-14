@@ -29,7 +29,7 @@ public class GetAllChatsHandler(
         if (stateResult.State is not TdApi.AuthorizationState.AuthorizationStateReady)
             throw new ArgumentException("Invalid authorization. Current state is {0}",
                 stateResult.State.ToString());
-
+        
         var chatsData = await client.ExecuteAsync(new TdApi.GetChats
         {
             Limit = 20
