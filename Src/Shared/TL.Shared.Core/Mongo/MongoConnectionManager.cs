@@ -7,10 +7,10 @@ public class MongoConnectionManager : IMongoConnectionManager
 {
     public IMongoDatabase Database { get; set; }
 
-    public MongoConnectionManager(IConfigurationManager configurationManager)
+    public MongoConnectionManager(IConfiguration configuration)
     {
-        var client = new MongoClient(configurationManager.GetConnectionString("MongoConnectionString"));
-        Database = client.GetDatabase(configurationManager.GetConnectionString("Mongo:Database"));
+        var client = new MongoClient(configuration.GetConnectionString("MongoConnectionString"));
+        Database = client.GetDatabase(configuration.GetConnectionString("Mongo:Database"));
     }
 
     public IMongoCollection<T> GetCollection<T>(string collectionName)

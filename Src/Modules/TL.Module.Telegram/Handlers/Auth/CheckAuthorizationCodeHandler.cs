@@ -17,9 +17,9 @@ public class CheckAuthorizationCodeHandler(
         if (settings is null)
         {
             logger.LogError("Settings not found!");
-            throw new ArgumentException(message: "Settings not found!");
+            throw new ArgumentException("Settings not found!");
         }
-        
+
         var client = new TdClient();
         await client.SetParameters(settings.ApiHash, settings.ApiId);
 
@@ -29,7 +29,7 @@ public class CheckAuthorizationCodeHandler(
         if (stateResult.State is not TdApi.AuthorizationState.AuthorizationStateWaitCode)
             throw new ArgumentException("Invalid authorization. Current state is {0}",
                 stateResult.State.ToString());
-        
+
         try
         {
             await SetAuthorizationCode(client, request.Code);
@@ -42,10 +42,12 @@ public class CheckAuthorizationCodeHandler(
             return new CheckTelegramAuthorizationCodeResults(false);
         }
     }
-    
-    private static Task SetAuthorizationCode(TdClient client, string code) =>
-        client.ExecuteAsync(new TdApi.CheckAuthenticationCode
+
+    private static Task SetAuthorizationCode(TdClient client, string code)
+    {
+        return client.ExecuteAsync(new TdApi.CheckAuthenticationCode
         {
             Code = code
         });
+    }
 }

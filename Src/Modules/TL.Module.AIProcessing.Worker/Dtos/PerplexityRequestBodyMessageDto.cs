@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
-
 namespace TL.Module.AIProcessing.Worker.Dtos;
 
 public class PerplexityRequestBodyMessageDto

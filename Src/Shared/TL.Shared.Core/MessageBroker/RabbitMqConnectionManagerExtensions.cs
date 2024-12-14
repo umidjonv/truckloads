@@ -8,23 +8,22 @@ public static class RabbitMqConnectionManagerExtensions
 {
     public static IServiceCollection AddRabbitMqConnectionManager(this IServiceCollection services)
     {
-        services.AddSingleton(async (provider) =>
+        services.AddSingleton<IRabbitMqConnectionManager>(provider =>
         {
             var logger = provider.GetRequiredService<ILogger<RabbitMqConnectionManager>>();
-            var configurationManager = provider.GetRequiredService<IConfigurationManager>();
+            var configuration = provider.GetRequiredService<IConfiguration>();
             try
             {
-                IRabbitMqConnectionManager rabbit = new RabbitMqConnectionManager(logger, configurationManager);
-                await rabbit.Connect();
+                IRabbitMqConnectionManager rabbit = new RabbitMqConnectionManager(logger, configuration);
                 return rabbit;
             }
             catch (Exception e)
             {
                 logger.LogError("[{0}] Connection failed. Details: {1}", nameof(RabbitMqConnectionManager), e.Message);
-                return new RabbitMqConnectionManager(logger, configurationManager);
+                return null;
             }
         });
-        
+
         return services;
     }
 }

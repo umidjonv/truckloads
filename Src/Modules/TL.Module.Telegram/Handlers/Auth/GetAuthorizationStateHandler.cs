@@ -19,7 +19,7 @@ public class GetAuthorizationStateHandler(
         if (settings is null)
         {
             logger.LogError("Settings not found!");
-            throw new ArgumentException(message: "Settings not found!");
+            throw new ArgumentException("Settings not found!");
         }
 
         var client = new TdClient();

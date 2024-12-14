@@ -2,7 +2,6 @@
 using System.Text.Json;
 using MediatR;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TL.Module.AIProcessing.Worker.Dtos;
 using TL.Shared.Common.Dtos.AIProcessing;
@@ -11,15 +10,15 @@ namespace TL.Module.AIProcessing.Worker.Handlers;
 
 public class SendPostToAIHandler(
     IHttpClientFactory httpClientFactory,
-    IConfigurationManager configurationManager,
+    IConfiguration configuration,
     ILogger<SendPostToAIHandler> logger)
     : IRequestHandler<SendPostToAIParams, SendPostToAIResult>
 {
     public async Task<SendPostToAIResult> Handle(SendPostToAIParams request,
         CancellationToken cancellationToken)
     {
-        var url = configurationManager["PerplexityAI:Url"]; // https://api.perplexity.ai
-        var path = configurationManager["PerplexityAI:Path"] ?? "/"; // /chat/completions
+        var url = configuration["PerplexityAI:Url"];
+        var path = configuration["PerplexityAI:Path"];
 
         if (string.IsNullOrWhiteSpace(url))
         {

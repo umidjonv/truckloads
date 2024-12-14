@@ -9,11 +9,6 @@ using TL.Shared.Core.MessageBroker;
 
 namespace TL.Module.Telegram.Worker.Jobs;
 
-public interface IParseMessageJob
-{
-    Task Invoke(CancellationToken cancellationToken = default);
-}
-
 public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseMessageJob
 {
     private static readonly ConcurrentQueue<TdApi.Message> NotSentMessages = [];
@@ -32,10 +27,10 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
 
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ParseMessageJob>>();
 
-        var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-        var exchangeKey = configurationManager[$"{nameof(ParseMessageJob)}:ExchangeKey"];
-        var routingKey = configurationManager[$"{nameof(ParseMessageJob)}:RoutingKey"];
-        var queueKey = configurationManager[$"{nameof(ParseMessageJob)}:QueueKey"];
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var exchangeKey = configuration[$"{nameof(ParseMessageJob)}:ExchangeKey"];
+        var routingKey = configuration[$"{nameof(ParseMessageJob)}:RoutingKey"];
+        var queueKey = configuration[$"{nameof(ParseMessageJob)}:QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
@@ -66,7 +61,6 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
         await Parallel.ForEachAsync(NotSentMessages, parallelOptions, async (_, token) =>
         {
             if (NotSentMessages.TryDequeue(out var message))
-            {
                 try
                 {
                     await rabbit.PublishAsync(exchangeKey, routingKey, queueKey, message, token);
@@ -78,7 +72,6 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
                         e.Message);
                     NotSentMessages.Enqueue(message);
                 }
-            }
         });
     }
 
@@ -88,10 +81,10 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
 
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ParseMessageJob>>();
 
-        var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-        var exchangeKey = configurationManager[$"{nameof(ParseMessageJob)}ExchangeKey"];
-        var routingKey = configurationManager[$"{nameof(ParseMessageJob)}RoutingKey"];
-        var queueKey = configurationManager[$"{nameof(ParseMessageJob)}QueueKey"];
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var exchangeKey = configuration[$"{nameof(ParseMessageJob)}ExchangeKey"];
+        var routingKey = configuration[$"{nameof(ParseMessageJob)}RoutingKey"];
+        var queueKey = configuration[$"{nameof(ParseMessageJob)}QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
@@ -140,7 +133,6 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
         {
             var messages = await mediator.Send(new GetChatNewMessageParams<TdApi.Message>(chat.Id), cancellationToken);
             foreach (var message in messages.Messages)
-            {
                 try
                 {
                     await rabbit.PublishAsync(exchangeKey, routingKey, queueKey, message, token);
@@ -151,7 +143,6 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
                     logger.LogError("[{0}] Publish massage is failed. Details: {1}", nameof(ParseMessageJob),
                         e.Message);
                 }
-            }
         });
     }
 }

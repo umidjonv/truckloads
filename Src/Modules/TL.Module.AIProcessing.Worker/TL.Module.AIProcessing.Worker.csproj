@@ -7,12 +7,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Shared\TL.Shared.Common\TL.Shared.Common.csproj" />
-      <ProjectReference Include="..\..\Shared\TL.Shared.Core\TL.Shared.Core.csproj" />
+        <ProjectReference Include="..\..\Shared\TL.Shared.Common\TL.Shared.Common.csproj"/>
+        <ProjectReference Include="..\..\Shared\TL.Shared.Core\TL.Shared.Core.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1"/>
     </ItemGroup>
 
 </Project>

@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using System.Text.Json;
 using MapsterMapper;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -9,7 +8,6 @@ using TL.Shared.Core.MessageBroker;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using TL.Shared.Common.Dtos.AIProcessing;
-using TL.Shared.Common.Dtos.Telegram;
 using TL.Shared.Core.Mongo;
 
 namespace TL.Module.AIProcessing.Worker.Consumers;
@@ -22,12 +20,12 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ConvertMessageToJsonConsumer>>();
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
 
-        var (_, channel) = await rabbit.Connect();
+        var (_, channel) = await rabbit.GetConnection();
 
-        var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-        var exchangeKey = configurationManager[$"{nameof(ConvertMessageToJsonConsumer)}:ExchangeKey"];
-        var routingKey = configurationManager[$"{nameof(ConvertMessageToJsonConsumer)}:RoutingKey"];
-        var queueKey = configurationManager[$"{nameof(ConvertMessageToJsonConsumer)}:QueueKey"];
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var exchangeKey = configuration[$"{nameof(ConvertMessageToJsonConsumer)}:ExchangeKey"];
+        var routingKey = configuration[$"{nameof(ConvertMessageToJsonConsumer)}:RoutingKey"];
+        var queueKey = configuration[$"{nameof(ConvertMessageToJsonConsumer)}:QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
@@ -53,16 +51,16 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
         var dlxExchange = $"{exchangeKey}.dlx";
         var dlxQueueKey = $"{queueKey}.dead-letter";
 
-        await channel.ExchangeDeclareAsync(exchange: dlxExchange, type: ExchangeType.Direct,
+        await channel.ExchangeDeclareAsync(dlxExchange, ExchangeType.Direct,
             cancellationToken: cancellationToken);
 
-        await channel.QueueDeclareAsync(queue: dlxQueueKey,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
+        await channel.QueueDeclareAsync(dlxQueueKey,
+            true,
+            false,
+            false,
             cancellationToken: cancellationToken);
 
-        await channel.QueueBindAsync(queue: dlxQueueKey, exchange: dlxExchange, routingKey: dlxQueueKey,
+        await channel.QueueBindAsync(dlxQueueKey, dlxExchange, dlxQueueKey,
             cancellationToken: cancellationToken);
 
         var queueArguments = new Dictionary<string, object?>
@@ -71,14 +69,14 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
             { "x-dead-letter-routing-key", dlxQueueKey }
         };
 
-        await channel.QueueDeclareAsync(queue: queueKey,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: queueArguments,
+        await channel.QueueDeclareAsync(queueKey,
+            true,
+            false,
+            false,
+            queueArguments,
             cancellationToken: cancellationToken);
 
-        await channel.QueueBindAsync(queue: queueKey, exchange: exchangeKey, routingKey: routingKey,
+        await channel.QueueBindAsync(queueKey, exchangeKey, routingKey,
             cancellationToken: cancellationToken);
 
         var consumer = new AsyncEventingBasicConsumer(channel);
@@ -86,8 +84,8 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
         consumer.ReceivedAsync += async (_, ea) => await Receive(channel, ea, cancellationToken);
 
         await channel.BasicConsumeAsync(queueKey,
-            autoAck: false,
-            consumer: consumer, cancellationToken: cancellationToken);
+            false,
+            consumer, cancellationToken);
 
         await channel.BasicQosAsync(0, (ushort)Environment.ProcessorCount, false, cancellationToken);
     }
@@ -124,8 +122,8 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
                 await collection.InsertManyAsync(mapper.Map<List<PostsCollectionDto>>(result.Posts),
                     cancellationToken: cancellationToken);
 
-                await channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false,
-                    cancellationToken: cancellationToken);
+                await channel.BasicAckAsync(ea.DeliveryTag, false,
+                    cancellationToken);
 
                 _counter += 1;
             }
@@ -134,8 +132,8 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
                 logger.LogError("[{0}] Insert post to mongo failed. Sending to DLX. Details: {1}",
                     nameof(ConvertMessageToJsonConsumer), e.Message);
 
-                await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false,
-                    cancellationToken: cancellationToken);
+                await channel.BasicNackAsync(ea.DeliveryTag, false, false,
+                    cancellationToken);
             }
         }
     }

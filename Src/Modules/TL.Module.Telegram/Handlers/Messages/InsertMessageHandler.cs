@@ -16,7 +16,7 @@ public class InsertMessageHandler(IDbContextFactory<TelegramDbContext> contextFa
         await _context.Messages.AddAsync(new TelegramMessage
         {
             ChatId = request.ChatId,
-            Message = request.Message,
+            Message = request.Message
         }, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
     }

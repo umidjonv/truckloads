@@ -4,7 +4,7 @@ namespace TL.Shared.Core.MessageBroker;
 
 public interface IRabbitMqConnectionManager
 {
-    Task<(IConnection, IChannel)> Connect();
+    Task<(IConnection, IChannel)> GetConnection();
 
     Task PublishAsync(string exchange, string route, string queue, string payload,
         CancellationToken cancellationToken = default);

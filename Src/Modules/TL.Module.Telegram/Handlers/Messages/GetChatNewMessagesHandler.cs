@@ -8,23 +8,25 @@ namespace TL.Module.Telegram.Handlers.Messages;
 
 public class GetChatNewMessagesHandler(
     ILogger<GetChatNewMessagesHandler> logger,
-    IMediator mediator) : IRequestHandler<GetChatNewMessageParams<TdApi.Message>, GetChatNewMessageResult<TdApi.Message>>
+    IMediator mediator)
+    : IRequestHandler<GetChatNewMessageParams<TdApi.Message>, GetChatNewMessageResult<TdApi.Message>>
 {
-    public async Task<GetChatNewMessageResult<TdApi.Message>> Handle(GetChatNewMessageParams<TdApi.Message> request, CancellationToken cancellationToken)
+    public async Task<GetChatNewMessageResult<TdApi.Message>> Handle(GetChatNewMessageParams<TdApi.Message> request,
+        CancellationToken cancellationToken)
     {
         var settings = await mediator.Send(new GetTelegramSettingsParams(), cancellationToken);
         if (settings is null)
         {
             logger.LogError("Settings not found!");
-            throw new ArgumentException(message: "Settings not found!");
+            throw new ArgumentException("Settings not found!");
         }
-        
+
         var client = new TdClient();
         await client.SetParameters(settings.ApiHash, settings.ApiId);
-        
+
         var stateResult = await mediator.Send(new GetTelegramAuthorizationStateParams<TdApi.AuthorizationState>(),
             cancellationToken);
-        
+
         if (stateResult.State is not TdApi.AuthorizationState.AuthorizationStateReady)
             throw new ArgumentException("Invalid authorization. Current state is {0}",
                 stateResult.State.ToString());
@@ -40,8 +42,8 @@ public class GetChatNewMessagesHandler(
                 FromMessageId = lastMessageId,
                 OnlyLocal = false
             });
-            
-            if(history.Messages_.Length == 0)
+
+            if (history.Messages_.Length == 0)
                 break;
 
             messages.AddRange(history.Messages_);
