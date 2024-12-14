@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Concurrent;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,41 +17,36 @@ public class TelegramBotCommandConsumer(
     ILogger<TelegramBotCommandConsumer> logger,
     IHttpClientFactory httpClientFactory) : ITelegramBotCommandConsumer
 {
-    private static readonly SemaphoreSlim Semaphore = new(Environment.ProcessorCount);
+    private static readonly ConcurrentDictionary<long, SemaphoreSlim> ConcurrentControl = [];
 
-    public Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        return StartProcessingQueue(stoppingToken);
-    }
-
-    private async Task StartProcessingQueue(CancellationToken cancellationToken)
+    public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         await using var scope = serviceScopeFactory.CreateAsyncScope();
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
 
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-        var exchangeKey = configuration[$"{nameof(TelegramBotCommandConsumer)}:ExchangeKey"];
-        var routingKey = configuration[$"{nameof(TelegramBotCommandConsumer)}:RoutingKey"];
-        var queueKey = configuration[$"{nameof(TelegramBotCommandConsumer)}:QueueKey"];
+        var exchangeKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:ExchangeKey"];
+        var routingKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:RoutingKey"];
+        var queueKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
             logger.LogError(
-                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotCommandConsumer)}:ExchangeKey is empty!");
+                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotUpdateConsumer)}:ExchangeKey is empty!");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(routingKey))
         {
             logger.LogError(
-                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotCommandConsumer)}:RoutingKey is empty!");
+                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotUpdateConsumer)}:RoutingKey is empty!");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(queueKey))
         {
             logger.LogError(
-                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotCommandConsumer)}:QueueKey is empty!");
+                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotUpdateConsumer)}:QueueKey is empty!");
             return;
         }
 
@@ -93,32 +89,47 @@ public class TelegramBotCommandConsumer(
     {
         if (update.Message != null)
         {
-            if (update.Type == UpdateType.Message && update.Message!.Type == MessageType.Text)
+            var chatId = update.Message.Chat.Id;
+            var semaphore = ConcurrentControl.GetOrAdd(chatId, _ => new SemaphoreSlim(1));
+            try
             {
-                var message = update.Message.Text?.Trim() ?? string.Empty;
-                var chatId = update.Message.Chat.Id;
-                switch (message)
+                await semaphore.WaitAsync(cancellationToken);
+
+                if (update.Type == UpdateType.Message && update.Message!.Type == MessageType.Text)
                 {
-                    case "/start":
+                    var message = update.Message.Text?.Trim() ?? string.Empty;
+                    switch (message)
                     {
-                        await HandleStartCommand(chatId, cancellationToken);
-                        break;
-                    }
-                    case "/help":
-                    {
-                        await HandleHelpCommand(chatId, cancellationToken);
-                        break;
-                    }
-                    default:
-                    {
-                        await HandleDefaultCommand(chatId, cancellationToken);
-                        break;
+                        case "/start":
+                        {
+                            await HandleStartCommand(chatId, cancellationToken);
+                            break;
+                        }
+                        case "/help":
+                        {
+                            await HandleHelpCommand(chatId, cancellationToken);
+                            break;
+                        }
+                        default:
+                        {
+                            await HandleDefaultCommand(chatId, cancellationToken);
+                            break;
+                        }
                     }
                 }
+                else if (update.Type == UpdateType.CallbackQuery)
+                {
+                    await HandleCallbackQuery(update.CallbackQuery, cancellationToken);
+                }
             }
-            else if (update.Type == UpdateType.CallbackQuery)
+            catch (Exception e)
             {
-                await HandleCallbackQuery(update.CallbackQuery, cancellationToken);
+                logger.LogError(e, "Exception while getting message");
+            }
+            finally
+            {
+                ConcurrentControl.TryRemove(chatId, out _);
+                semaphore.Release();
             }
         }
     }
@@ -157,10 +168,43 @@ public class TelegramBotCommandConsumer(
         await SendRequestAsync(content, cancellationToken);
     }
 
+    private async Task HandleCallbackQuery(CallbackQuery callbackQuery, CancellationToken cancellationToken)
+    {
+        var callbackData = callbackQuery.Data;
+        var userId = callbackQuery.From.Id;
+        var userName = callbackQuery.From.Username ?? "NoUsername";
+        var chatId = callbackQuery.Message?.Chat.Id;
+        var message = $"Rahmat, @{userName}! Siz obuna bo'ldingiz.";
+
+        if (callbackData == "subscribe" && chatId.HasValue)
+        {
+            var content = new StringContent(
+                $"{{\"chat_id\": \"{chatId}\", \"text\": \"{message}\"}}",
+                Encoding.UTF8,
+                "application/json");
+
+            await SendRequestAsync(content, cancellationToken);
+            
+            // TODO: insert to database
+            // await mediator.Send(userInfo, token);
+        }
+    }
+
+    private async Task HandleDefaultCommand(long chatId, CancellationToken cancellationToken)
+    {
+        var unknownCommandMessage = "Kechirasiz, bu buyruqni tushunmadim. Quyidagi komandalardan foydalaning:\n\n" +
+                                    "/start - Botni ishga tushurish\n" +
+                                    "/help - Yordam olish\n" +
+                                    "Obuna bo'lish uchun: 'Obuna bo'lish' tugmasini bosing.";
+
+        var content = new StringContent($"{{\"chat_id\": \"{chatId}\", \"text\": \"{unknownCommandMessage}\"}}",
+            Encoding.UTF8, "application/json");
+
+        await SendRequestAsync(content, cancellationToken);
+    }
+    
     private async Task SendRequestAsync(StringContent content, CancellationToken cancellationToken)
     {
-        await Semaphore.WaitAsync(cancellationToken);
-
         try
         {
             await using var scope = serviceScopeFactory.CreateAsyncScope();
@@ -189,56 +233,6 @@ public class TelegramBotCommandConsumer(
         {
             logger.LogError("[{0}] Error sending request: {1}", nameof(TelegramBotCommandConsumer), ex.Message);
         }
-        finally
-        {
-            Semaphore.Release();
-        }
     }
 
-    private async Task HandleCallbackQuery(CallbackQuery callbackQuery, CancellationToken cancellationToken)
-    {
-        var callbackData = callbackQuery.Data;
-        var userId = callbackQuery.From.Id;
-        var userName = callbackQuery.From.Username ?? "NoUsername";
-        var chatId = callbackQuery.Message?.Chat.Id;
-        var message = $"Rahmat, @{userName}! Siz obuna bo'ldingiz.";
-
-        if (callbackData == "subscribe" && chatId.HasValue)
-        {
-            var content = new StringContent(
-                $"{{\"chat_id\": \"{chatId}\", \"text\": \"{message}\"}}",
-                Encoding.UTF8,
-                "application/json");
-
-            await SendRequestAsync(content, cancellationToken);
-
-            Console.WriteLine($"Obuna bo'lgan user ID: {userId}, Username: @{userName}");
-
-            /*// UserDto ma'lumotlarini bazaga saqlash
-            UserDto userDto = new UserDto()
-            {
-                UserId = userId,
-                UserName = userName ?? "",
-                FirstName = callbackQuery.From.FirstName ?? "",
-                LastName = callbackQuery.From.LastName ?? ""
-
-            };*/
-
-            // Bazaga qo'shish (Bu yerda konkret kodni yozing)
-            //await SaveUserToDatabase(userDto);
-        }
-    }
-
-    private async Task HandleDefaultCommand(long chatId, CancellationToken cancellationToken)
-    {
-        var unknownCommandMessage = "Kechirasiz, bu buyruqni tushunmadim. Quyidagi komandalardan foydalaning:\n\n" +
-                                    "/start - Botni ishga tushurish\n" +
-                                    "/help - Yordam olish\n" +
-                                    "Obuna bo'lish uchun: 'Obuna bo'lish' tugmasini bosing.";
-
-        var content = new StringContent($"{{\"chat_id\": \"{chatId}\", \"text\": \"{unknownCommandMessage}\"}}",
-            Encoding.UTF8, "application/json");
-
-        await SendRequestAsync(content, cancellationToken);
-    }
 }

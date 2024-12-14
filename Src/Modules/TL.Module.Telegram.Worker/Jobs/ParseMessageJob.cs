@@ -135,6 +135,7 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
             foreach (var message in messages.Messages)
                 try
                 {
+                    // TODO: исправить publish model from Message to InsertMessageParams
                     await rabbit.PublishAsync(exchangeKey, routingKey, queueKey, message, token);
                 }
                 catch (Exception e)
