@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 using TL.Shared.Common.Dtos.AIProcessing;
-using TL.Shared.Core.MessageBroker;
 using TL.Shared.Core.Mongo;
 
 namespace TL.Module.AIProcessing.Worker.Jobs;
@@ -18,7 +17,6 @@ public class PostNotifierJob(IServiceScopeFactory serviceScopeFactory) : IPostNo
         var filter = filterDefinitionBuilder.Eq(s => s.IsProcessed, false);
         using var cursor = await collection.FindAsync(filter, cancellationToken: cancellationToken);
         while (await cursor.MoveNextAsync(cancellationToken))
-        {
             foreach (var post in cursor.Current)
             {
                 //TODO: notify subscribers
@@ -26,6 +24,5 @@ public class PostNotifierJob(IServiceScopeFactory serviceScopeFactory) : IPostNo
                 var replaceFilter = Builders<PostsCollectionDto>.Filter.Eq(p => p.Id, post.Id);
                 await collection.ReplaceOneAsync(replaceFilter, post, cancellationToken: cancellationToken);
             }
-        }
     }
 }

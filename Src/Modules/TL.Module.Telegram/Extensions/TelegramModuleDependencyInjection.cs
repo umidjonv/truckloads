@@ -8,7 +8,8 @@ namespace TL.Module.Telegram.Extensions;
 
 public static class TelegramModuleDependencyInjection
 {
-    public static IServiceCollection AddTelegramModule(this IServiceCollection services, IConfigurationManager configurationManager)
+    public static IServiceCollection AddTelegramModule(this IServiceCollection services,
+        IConfigurationManager configurationManager)
     {
         services.AddMediatR(s => s.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         services.AddDbContextFactory<TelegramDbContext>(options =>
@@ -16,7 +17,7 @@ public static class TelegramModuleDependencyInjection
             options.UseNpgsql(configurationManager.GetConnectionString("TelegramConnectionString"))
                 .UseLazyLoadingProxies();
         });
-        
+
         return services;
     }
 }

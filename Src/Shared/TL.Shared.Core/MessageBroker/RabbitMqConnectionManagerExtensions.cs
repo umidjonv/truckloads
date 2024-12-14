@@ -24,7 +24,7 @@ public static class RabbitMqConnectionManagerExtensions
                 return new RabbitMqConnectionManager(logger, configurationManager);
             }
         });
-        
+
         return services;
     }
 }

@@ -2,26 +2,19 @@
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TL.Shared.Core.MessageBroker;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace TL.Module.Telegram.Bot.Consumer;
 
-public interface IWorkerService
-{
-    Task ExecuteAsync(CancellationToken stoppingToken);
-}
-
-public class WorkerService(
+public class TelegramBotCommandConsumer(
     IServiceScopeFactory serviceScopeFactory,
-    ILogger<WorkerService> logger,
-    IHttpClientFactory factory) : IWorkerService
+    ILogger<TelegramBotCommandConsumer> logger,
+    IHttpClientFactory httpClientFactory) : ITelegramBotCommandConsumer
 {
     private static readonly SemaphoreSlim Semaphore = new(Environment.ProcessorCount);
 
@@ -36,40 +29,43 @@ public class WorkerService(
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
 
         var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-        var exchangeKey = configurationManager[$"{nameof(WorkerService)}:ExchangeKey"];
-        var routingKey = configurationManager[$"{nameof(WorkerService)}:RoutingKey"];
-        var queueKey = configurationManager[$"{nameof(WorkerService)}:QueueKey"];
+        var exchangeKey = configurationManager[$"{nameof(TelegramBotCommandConsumer)}:ExchangeKey"];
+        var routingKey = configurationManager[$"{nameof(TelegramBotCommandConsumer)}:RoutingKey"];
+        var queueKey = configurationManager[$"{nameof(TelegramBotCommandConsumer)}:QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
-            logger.LogError($"[{nameof(WorkerService)}] {nameof(WorkerService)}:ExchangeKey is empty!");
+            logger.LogError(
+                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotCommandConsumer)}:ExchangeKey is empty!");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(routingKey))
         {
-            logger.LogError($"[{nameof(WorkerService)}] {nameof(WorkerService)}:RoutingKey is empty!");
+            logger.LogError(
+                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotCommandConsumer)}:RoutingKey is empty!");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(queueKey))
         {
-            logger.LogError($"[{nameof(WorkerService)}] {nameof(WorkerService)}:QueueKey is empty!");
+            logger.LogError(
+                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotCommandConsumer)}:QueueKey is empty!");
             return;
         }
 
         var (_, channel) = await rabbit.Connect();
 
-        await channel.ExchangeDeclareAsync(exchange: exchangeKey, type: ExchangeType.Direct,
+        await channel.ExchangeDeclareAsync(exchangeKey, ExchangeType.Direct,
             cancellationToken: cancellationToken);
 
-        await channel.QueueDeclareAsync(queue: queueKey,
-            durable: false,
-            exclusive: false,
-            autoDelete: false,
+        await channel.QueueDeclareAsync(queueKey,
+            false,
+            false,
+            false,
             cancellationToken: cancellationToken);
 
-        await channel.QueueBindAsync(queue: queueKey, exchange: exchangeKey, routingKey: routingKey,
+        await channel.QueueBindAsync(queueKey, exchangeKey, routingKey,
             cancellationToken: cancellationToken);
 
         var consumer = new AsyncEventingBasicConsumer(channel);
@@ -81,10 +77,7 @@ public class WorkerService(
             {
                 var update = JsonSerializer.Deserialize<Update>(message);
 
-                if (update != null)
-                {
-                    await ProcessUpdate(update, cancellationToken);
-                }
+                if (update != null) await ProcessUpdate(update, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -92,14 +85,12 @@ public class WorkerService(
             }
         };
 
-        await channel.BasicConsumeAsync(queue: queueKey, autoAck: true, consumer: consumer,
-            cancellationToken: cancellationToken);
+        await channel.BasicConsumeAsync(queueKey, true, consumer,
+            cancellationToken);
     }
 
     private async Task ProcessUpdate(Update update, CancellationToken cancellationToken)
     {
-        await using var scope = serviceScopeFactory.CreateAsyncScope();
-        
         if (update.Message != null)
         {
             if (update.Type == UpdateType.Message && update.Message!.Type == MessageType.Text)
@@ -134,7 +125,7 @@ public class WorkerService(
 
     private async Task HandleStartCommand(long chatId, CancellationToken cancellationToken)
     {
-        string json = $@"
+        var json = $@"
           {{
               ""chat_id"": ""{chatId}"",
               ""text"": ""Assalomu alaykum! Obuna bo'lish uchun tugmani bosing."",
@@ -154,7 +145,7 @@ public class WorkerService(
 
     private async Task HandleHelpCommand(long chatId, CancellationToken cancellationToken)
     {
-        string helpMessage =
+        var helpMessage =
             "Salom! Bu botni ishlatish uchun obuna bo'lishingiz kerak. Quyidagi komandalardan foydalanishingiz mumkin:\n\n" +
             "/start - Botni ishga tushurish\n" +
             "/help - Yordam olish\n" +
@@ -172,16 +163,31 @@ public class WorkerService(
 
         try
         {
-            using var client = factory.CreateClient();
+            await using var scope = serviceScopeFactory.CreateAsyncScope();
+            using var client = httpClientFactory.CreateClient();
 
+            var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
+
+            var botUrl = configurationManager["BotSettings:BotUrl"];
+            ArgumentNullException.ThrowIfNull(botUrl);
+
+            client.BaseAddress = new Uri(botUrl);
+
+            var botToken = configurationManager["BotSettings:BotToken"];
+            ArgumentNullException.ThrowIfNull(botToken);
+
+            var sendMessagePath = configurationManager["BotSettings:SendMessagePath"];
+            ArgumentNullException.ThrowIfNull(sendMessagePath);
+
+            var url = $"/bot{botToken.TrimStart('/').TrimEnd('/')}/{sendMessagePath.TrimStart('/').TrimEnd('/')}";
             using var response =
-                await client.PostAsync(StaticData.BotBase_Url, content, cancellationToken);
+                await client.PostAsync(url, content, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
         {
-            logger.LogError("[{0}] Error sending request: {1}", nameof(WorkerService), ex.Message);
+            logger.LogError("[{0}] Error sending request: {1}", nameof(TelegramBotCommandConsumer), ex.Message);
         }
         finally
         {
@@ -191,13 +197,13 @@ public class WorkerService(
 
     private async Task HandleCallbackQuery(CallbackQuery callbackQuery, CancellationToken cancellationToken)
     {
-        string? callbackData = callbackQuery.Data;
-        long userId = callbackQuery.From.Id;
-        string userName = callbackQuery.From.Username ?? "NoUsername";
-        long chatId = callbackQuery.Message.Chat.Id;
-        string message = $"Rahmat, @{userName}! Siz obuna bo'ldingiz.";
+        var callbackData = callbackQuery.Data;
+        var userId = callbackQuery.From.Id;
+        var userName = callbackQuery.From.Username ?? "NoUsername";
+        var chatId = callbackQuery.Message?.Chat.Id;
+        var message = $"Rahmat, @{userName}! Siz obuna bo'ldingiz.";
 
-        if (callbackData == "subscribe")
+        if (callbackData == "subscribe" && chatId.HasValue)
         {
             var content = new StringContent(
                 $"{{\"chat_id\": \"{chatId}\", \"text\": \"{message}\"}}",
@@ -225,10 +231,10 @@ public class WorkerService(
 
     private async Task HandleDefaultCommand(long chatId, CancellationToken cancellationToken)
     {
-        string unknownCommandMessage = "Kechirasiz, bu buyruqni tushunmadim. Quyidagi komandalardan foydalaning:\n\n" +
-                                       "/start - Botni ishga tushurish\n" +
-                                       "/help - Yordam olish\n" +
-                                       "Obuna bo'lish uchun: 'Obuna bo'lish' tugmasini bosing.";
+        var unknownCommandMessage = "Kechirasiz, bu buyruqni tushunmadim. Quyidagi komandalardan foydalaning:\n\n" +
+                                    "/start - Botni ishga tushurish\n" +
+                                    "/help - Yordam olish\n" +
+                                    "Obuna bo'lish uchun: 'Obuna bo'lish' tugmasini bosing.";
 
         var content = new StringContent($"{{\"chat_id\": \"{chatId}\", \"text\": \"{unknownCommandMessage}\"}}",
             Encoding.UTF8, "application/json");

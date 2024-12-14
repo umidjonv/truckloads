@@ -17,7 +17,7 @@ public class GetTelegramSettingsHandler(IDbContextFactory<TelegramDbContext> con
         var settings = await _context.Settings
             .AsNoTracking()
             .OrderByDescending(s => s.CreatedDate)
-            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken);
 
         return settings is null ? null : mapper.Map<GetTelegramSettingsResult>(settings);
     }

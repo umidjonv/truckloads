@@ -16,7 +16,7 @@ public class LoginClientHandler(ILogger<LoginClientHandler> logger, IMediator me
         if (settings is null)
         {
             logger.LogError("Settings not found!");
-            throw new ArgumentException(message: "Settings not found!");
+            throw new ArgumentException("Settings not found!");
         }
 
         var client = new TdClient();
@@ -26,10 +26,8 @@ public class LoginClientHandler(ILogger<LoginClientHandler> logger, IMediator me
             cancellationToken);
 
         if (stateResult.State is not TdApi.AuthorizationState.AuthorizationStateWaitPhoneNumber)
-        {
             throw new ArgumentException("Invalid authorization. Current state is {0}",
                 stateResult.State.ToString());
-        }
 
         try
         {
@@ -42,9 +40,11 @@ public class LoginClientHandler(ILogger<LoginClientHandler> logger, IMediator me
         }
     }
 
-    private static Task SetPhoneNumber(TdClient client, string phoneNumber) =>
-        client.ExecuteAsync(new TdApi.SetAuthenticationPhoneNumber
+    private static Task SetPhoneNumber(TdClient client, string phoneNumber)
+    {
+        return client.ExecuteAsync(new TdApi.SetAuthenticationPhoneNumber
         {
             PhoneNumber = phoneNumber
         });
+    }
 }

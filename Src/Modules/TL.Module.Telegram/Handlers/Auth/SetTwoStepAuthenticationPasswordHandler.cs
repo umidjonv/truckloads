@@ -8,23 +8,25 @@ namespace TL.Module.Telegram.Handlers.Auth;
 
 public class SetTwoStepAuthenticationPasswordHandler(
     ILogger<SetTwoStepAuthenticationPasswordHandler> logger,
-    IMediator mediator) : IRequestHandler<SetTwoStepTelegramAuthenticationPasswordParams, SetTwoStepTelegramAuthenticationPasswordResult>
+    IMediator mediator)
+    : IRequestHandler<SetTwoStepTelegramAuthenticationPasswordParams, SetTwoStepTelegramAuthenticationPasswordResult>
 {
-    public async Task<SetTwoStepTelegramAuthenticationPasswordResult> Handle(SetTwoStepTelegramAuthenticationPasswordParams request, CancellationToken cancellationToken)
+    public async Task<SetTwoStepTelegramAuthenticationPasswordResult> Handle(
+        SetTwoStepTelegramAuthenticationPasswordParams request, CancellationToken cancellationToken)
     {
         var settings = await mediator.Send(new GetTelegramSettingsParams(), cancellationToken);
         if (settings is null)
         {
             logger.LogError("Settings not found!");
-            throw new ArgumentException(message: "Settings not found!");
+            throw new ArgumentException("Settings not found!");
         }
-        
+
         var client = new TdClient();
         await client.SetParameters(settings.ApiHash, settings.ApiId);
 
         var stateResult = await mediator.Send(new GetTelegramAuthorizationStateParams<TdApi.AuthorizationState>(),
             cancellationToken);
-        
+
         if (stateResult.State is not TdApi.AuthorizationState.AuthorizationStateWaitPassword)
             throw new ArgumentException("Invalid authorization. Current state is {0}",
                 stateResult.State.ToString());
@@ -40,10 +42,12 @@ public class SetTwoStepAuthenticationPasswordHandler(
             return new SetTwoStepTelegramAuthenticationPasswordResult(false);
         }
     }
-    
-    private static Task SetTwoStepAuthenticationPassword(TdClient client, string password) =>
-        client.ExecuteAsync(new TdApi.CheckAuthenticationPassword()
+
+    private static Task SetTwoStepAuthenticationPassword(TdClient client, string password)
+    {
+        return client.ExecuteAsync(new TdApi.CheckAuthenticationPassword()
         {
             Password = password
         });
+    }
 }

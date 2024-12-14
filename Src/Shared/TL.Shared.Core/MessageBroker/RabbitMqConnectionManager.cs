@@ -44,14 +44,15 @@ public class RabbitMqConnectionManager(ILogger logger, IConfigurationManager con
         return (_connection, _channel);
     }
 
-    public async Task PublishAsync(string exchange, string route, string queue, string payload, CancellationToken cancellationToken = default)
+    public async Task PublishAsync(string exchange, string route, string queue, string payload,
+        CancellationToken cancellationToken = default)
     {
         if (_channel is null)
         {
             logger.LogError("[{0}] Not connected to RabbitMQ", nameof(RabbitMqConnectionManager));
             return;
         }
-        
+
         await DeclareAsync(_channel, exchange, route, queue, cancellationToken);
 
         var body = Encoding.UTF8.GetBytes(payload);
@@ -64,18 +65,19 @@ public class RabbitMqConnectionManager(ILogger logger, IConfigurationManager con
             {
                 Persistent = true
             },
-            body, 
+            body,
             cancellationToken);
     }
 
-    public async Task PublishAsync<T>(string exchange, string route, string queue, T payload, CancellationToken cancellationToken = default) where T : class
+    public async Task PublishAsync<T>(string exchange, string route, string queue, T payload,
+        CancellationToken cancellationToken = default) where T : class
     {
         if (_channel is null)
         {
             logger.LogError("[{0}] Not connected to RabbitMQ", nameof(RabbitMqConnectionManager));
             return;
         }
-        
+
         await DeclareAsync(_channel, exchange, route, queue, cancellationToken);
 
         var message = JsonSerializer.Serialize(payload);
@@ -92,9 +94,10 @@ public class RabbitMqConnectionManager(ILogger logger, IConfigurationManager con
             body, cancellationToken);
     }
 
-    private static async Task DeclareAsync(IChannel channel, string exchange, string route, string queue, CancellationToken cancellationToken)
+    private static async Task DeclareAsync(IChannel channel, string exchange, string route, string queue,
+        CancellationToken cancellationToken)
     {
-        await channel.ExchangeDeclareAsync(exchange: exchange, type: ExchangeType.Direct, cancellationToken: cancellationToken);
+        await channel.ExchangeDeclareAsync(exchange, ExchangeType.Direct, cancellationToken: cancellationToken);
         await channel.QueueDeclareAsync(queue, true, false, false, cancellationToken: cancellationToken);
         await channel.QueueBindAsync(queue, exchange, route, cancellationToken: cancellationToken);
     }
