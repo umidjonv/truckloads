@@ -10,15 +10,15 @@ namespace TL.Module.AIProcessing.Worker.Handlers;
 
 public class SendPostToAIHandler(
     IHttpClientFactory httpClientFactory,
-    IConfigurationManager configurationManager,
+    IConfiguration configuration,
     ILogger<SendPostToAIHandler> logger)
     : IRequestHandler<SendPostToAIParams, SendPostToAIResult>
 {
     public async Task<SendPostToAIResult> Handle(SendPostToAIParams request,
         CancellationToken cancellationToken)
     {
-        var url = configurationManager["PerplexityAI:Url"];
-        var path = configurationManager["PerplexityAI:Path"];
+        var url = configuration["PerplexityAI:Url"];
+        var path = configuration["PerplexityAI:Path"];
 
         if (string.IsNullOrWhiteSpace(url))
         {

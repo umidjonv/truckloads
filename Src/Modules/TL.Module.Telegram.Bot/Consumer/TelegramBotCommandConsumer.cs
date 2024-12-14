@@ -28,10 +28,10 @@ public class TelegramBotCommandConsumer(
         await using var scope = serviceScopeFactory.CreateAsyncScope();
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
 
-        var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-        var exchangeKey = configurationManager[$"{nameof(TelegramBotCommandConsumer)}:ExchangeKey"];
-        var routingKey = configurationManager[$"{nameof(TelegramBotCommandConsumer)}:RoutingKey"];
-        var queueKey = configurationManager[$"{nameof(TelegramBotCommandConsumer)}:QueueKey"];
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var exchangeKey = configuration[$"{nameof(TelegramBotCommandConsumer)}:ExchangeKey"];
+        var routingKey = configuration[$"{nameof(TelegramBotCommandConsumer)}:RoutingKey"];
+        var queueKey = configuration[$"{nameof(TelegramBotCommandConsumer)}:QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
@@ -54,7 +54,7 @@ public class TelegramBotCommandConsumer(
             return;
         }
 
-        var (_, channel) = await rabbit.Connect();
+        var (_, channel) = await rabbit.GetConnection();
 
         await channel.ExchangeDeclareAsync(exchangeKey, ExchangeType.Direct,
             cancellationToken: cancellationToken);
@@ -166,17 +166,17 @@ public class TelegramBotCommandConsumer(
             await using var scope = serviceScopeFactory.CreateAsyncScope();
             using var client = httpClientFactory.CreateClient();
 
-            var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
+            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-            var botUrl = configurationManager["BotSettings:BotUrl"];
+            var botUrl = configuration["BotSettings:BotUrl"];
             ArgumentNullException.ThrowIfNull(botUrl);
 
             client.BaseAddress = new Uri(botUrl);
 
-            var botToken = configurationManager["BotSettings:BotToken"];
+            var botToken = configuration["BotSettings:BotToken"];
             ArgumentNullException.ThrowIfNull(botToken);
 
-            var sendMessagePath = configurationManager["BotSettings:SendMessagePath"];
+            var sendMessagePath = configuration["BotSettings:SendMessagePath"];
             ArgumentNullException.ThrowIfNull(sendMessagePath);
 
             var url = $"/bot{botToken.TrimStart('/').TrimEnd('/')}/{sendMessagePath.TrimStart('/').TrimEnd('/')}";

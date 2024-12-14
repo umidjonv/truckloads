@@ -27,10 +27,10 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
 
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ParseMessageJob>>();
 
-        var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-        var exchangeKey = configurationManager[$"{nameof(ParseMessageJob)}:ExchangeKey"];
-        var routingKey = configurationManager[$"{nameof(ParseMessageJob)}:RoutingKey"];
-        var queueKey = configurationManager[$"{nameof(ParseMessageJob)}:QueueKey"];
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var exchangeKey = configuration[$"{nameof(ParseMessageJob)}:ExchangeKey"];
+        var routingKey = configuration[$"{nameof(ParseMessageJob)}:RoutingKey"];
+        var queueKey = configuration[$"{nameof(ParseMessageJob)}:QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
@@ -81,10 +81,10 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
 
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ParseMessageJob>>();
 
-        var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-        var exchangeKey = configurationManager[$"{nameof(ParseMessageJob)}ExchangeKey"];
-        var routingKey = configurationManager[$"{nameof(ParseMessageJob)}RoutingKey"];
-        var queueKey = configurationManager[$"{nameof(ParseMessageJob)}QueueKey"];
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var exchangeKey = configuration[$"{nameof(ParseMessageJob)}ExchangeKey"];
+        var routingKey = configuration[$"{nameof(ParseMessageJob)}RoutingKey"];
+        var queueKey = configuration[$"{nameof(ParseMessageJob)}QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {

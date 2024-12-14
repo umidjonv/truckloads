@@ -19,12 +19,12 @@ public class InsertMessageConsumer(IServiceScopeFactory serviceScopeFactory) : I
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<InsertMessageConsumer>>();
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
 
-        var (_, channel) = await rabbit.Connect();
+        var (_, channel) = await rabbit.GetConnection();
 
-        var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-        var exchangeKey = configurationManager[$"{nameof(InsertMessageConsumer)}:ExchangeKey"];
-        var routingKey = configurationManager[$"{nameof(InsertMessageConsumer)}:RoutingKey"];
-        var queueKey = configurationManager[$"{nameof(InsertMessageConsumer)}:QueueKey"];
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var exchangeKey = configuration[$"{nameof(InsertMessageConsumer)}:ExchangeKey"];
+        var routingKey = configuration[$"{nameof(InsertMessageConsumer)}:RoutingKey"];
+        var queueKey = configuration[$"{nameof(InsertMessageConsumer)}:QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
@@ -101,10 +101,10 @@ public class InsertMessageConsumer(IServiceScopeFactory serviceScopeFactory) : I
         {
             if (message is not null)
             {
-                var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-                var exchangeKey = configurationManager[$"ConvertMessageToJsonConsumer:ExchangeKey"];
-                var routingKey = configurationManager[$"ConvertMessageToJsonConsumer:RoutingKey"];
-                var queueKey = configurationManager[$"ConvertMessageToJsonConsumer:QueueKey"];
+                var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                var exchangeKey = configuration[$"ConvertMessageToJsonConsumer:ExchangeKey"];
+                var routingKey = configuration[$"ConvertMessageToJsonConsumer:RoutingKey"];
+                var queueKey = configuration[$"ConvertMessageToJsonConsumer:QueueKey"];
 
                 if (string.IsNullOrWhiteSpace(exchangeKey))
                 {

@@ -20,12 +20,12 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ConvertMessageToJsonConsumer>>();
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
 
-        var (_, channel) = await rabbit.Connect();
+        var (_, channel) = await rabbit.GetConnection();
 
-        var configurationManager = scope.ServiceProvider.GetRequiredService<IConfigurationManager>();
-        var exchangeKey = configurationManager[$"{nameof(ConvertMessageToJsonConsumer)}:ExchangeKey"];
-        var routingKey = configurationManager[$"{nameof(ConvertMessageToJsonConsumer)}:RoutingKey"];
-        var queueKey = configurationManager[$"{nameof(ConvertMessageToJsonConsumer)}:QueueKey"];
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var exchangeKey = configuration[$"{nameof(ConvertMessageToJsonConsumer)}:ExchangeKey"];
+        var routingKey = configuration[$"{nameof(ConvertMessageToJsonConsumer)}:RoutingKey"];
+        var queueKey = configuration[$"{nameof(ConvertMessageToJsonConsumer)}:QueueKey"];
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {

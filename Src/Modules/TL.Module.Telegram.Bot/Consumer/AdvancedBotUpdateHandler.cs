@@ -34,7 +34,7 @@ public class AdvancedBotUpdateHandler(
         await using var scope = serviceScopeFactory.CreateAsyncScope();
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
 
-        var (_, channel) = await rabbit.Connect();
+        var (_, channel) = await rabbit.GetConnection();
 
         await channel.QueueDeclareAsync("updates",
             false,

@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.PostgreSql;
+using Mapster;
 using TL.Module.AIProcessing.Worker.Consumers;
 using TL.Module.AIProcessing.Worker.Extensions;
 using TL.Module.AIProcessing.Worker.Jobs;
@@ -14,6 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddHttpClient();
+
+builder.Services.AddMapster();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -24,15 +29,17 @@ builder.Services.AddTelegramWorkerModule();
 builder.Services.AddAIProcessingModule();
 builder.Services.AddTelegramModule(builder.Configuration);
 
-GlobalConfiguration.Configuration
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(options =>
-    {
-        options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("HangfireConnectionString"));
-    });
-
+builder.Services.AddHangfire(configuration =>
+{
+    configuration
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(options =>
+        {
+            options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("HangfireConnectionString"));
+        });
+});
 builder.Services.AddHangfireServer();
 
 var app = builder.Build();
