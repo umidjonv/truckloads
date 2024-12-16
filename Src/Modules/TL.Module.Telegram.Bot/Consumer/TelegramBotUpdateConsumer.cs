@@ -29,8 +29,8 @@ public class TelegramBotUpdateConsumer(
             AllowedUpdates = Enum.GetValues<UpdateType>()
         };
 
-        client.StartReceiving(updateHandler: this, receiverOptions: receiverOptions,
-            cancellationToken: cancellationToken);
+        client.StartReceiving(this, receiverOptions,
+            cancellationToken);
     }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
@@ -45,7 +45,7 @@ public class TelegramBotUpdateConsumer(
     {
         using var scope = serviceScopeFactory.CreateAsyncScope();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<TelegramBotUpdateConsumer>>();
-        
+
         logger.LogError($"Xatolik bor {exception}");
         return Task.CompletedTask;
     }
@@ -59,7 +59,7 @@ public class TelegramBotUpdateConsumer(
         var exchangeKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:ExchangeKey"];
         var routingKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:RoutingKey"];
         var queueKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:QueueKey"];
-        
+
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<TelegramBotUpdateConsumer>>();
 
         if (string.IsNullOrWhiteSpace(exchangeKey))

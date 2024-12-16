@@ -60,6 +60,8 @@ var backgroundJobClient = scope.ServiceProvider.GetRequiredService<IBackgroundJo
 backgroundJobClient.Enqueue<IConvertMessageToJsonConsumer>(s => s.Consume(cancellationTokenSource.Token));
 backgroundJobClient.Enqueue<IInsertMessageConsumer>(s => s.Consume(cancellationTokenSource.Token));
 backgroundJobClient.Enqueue<ITelegramBotUpdateConsumer>(s => s.StartReceiving(cancellationTokenSource.Token));
+backgroundJobClient.Enqueue<ITelegramBotCommandConsumer>(s => s.ExecuteAsync(cancellationTokenSource.Token));
+backgroundJobClient.Enqueue<IUserNotifyConsumer>(s => s.Consume(cancellationTokenSource.Token));
 
 var recurringJobClient = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 recurringJobClient.AddOrUpdate<IPostNotifierJob>(
@@ -68,6 +70,10 @@ recurringJobClient.AddOrUpdate<IPostNotifierJob>(
     "*/12 * * * *");
 recurringJobClient.AddOrUpdate<IParseMessageJob>(
     $"{nameof(IParseMessageJob)}.{nameof(IParseMessageJob.Invoke)}",
+    s => s.Invoke(cancellationTokenSource.Token),
+    "*/12 * * * *");
+recurringJobClient.AddOrUpdate<IParseChatsJob>(
+    $"{nameof(IParseChatsJob)}.{nameof(IParseChatsJob.Invoke)}",
     s => s.Invoke(cancellationTokenSource.Token),
     "*/12 * * * *");
 

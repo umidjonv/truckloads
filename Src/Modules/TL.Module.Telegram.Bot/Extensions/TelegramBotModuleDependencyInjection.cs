@@ -9,7 +9,8 @@ public static class TelegramBotModuleDependencyInjection
     {
         services.AddSingleton<ITelegramBotCommandConsumer, TelegramBotCommandConsumer>();
         services.AddSingleton<ITelegramBotUpdateConsumer, TelegramBotUpdateConsumer>();
-        
+        services.AddSingleton<IUserNotifyConsumer, UserNotifyConsumer>();
+
         return services;
     }
 }

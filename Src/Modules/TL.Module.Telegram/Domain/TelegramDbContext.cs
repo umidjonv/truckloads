@@ -9,7 +9,7 @@ public class TelegramDbContext(DbContextOptions<TelegramDbContext> options) : Db
 
     public DbSet<TelegramMessage> Messages { get; set; }
 
-    public DbSet<TelegramAllowedChat> AllowedChats { get; set; }
+    public DbSet<TelegramChat> Chats { get; set; }
 
     public DbSet<TelegramUser> Users { get; set; }
 }

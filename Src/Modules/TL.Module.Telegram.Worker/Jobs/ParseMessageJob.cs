@@ -114,8 +114,8 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
             return;
         }
 
-        var chats = await mediator.Send(new GetAllTelegramChatsParams<TdApi.Chat>(), cancellationToken);
-        if (chats.Chats.Any())
+        var chats = await mediator.Send(new GetAllowedChatIdsParams(), cancellationToken);
+        if (chats.ChatIds.Any())
         {
             logger.LogWarning("[{0}] No Telegram chats found", nameof(ParseMessageJob));
             return;
@@ -129,14 +129,21 @@ public class ParseMessageJob(IServiceScopeFactory serviceScopeFactory) : IParseM
 
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
 
-        await Parallel.ForEachAsync(chats.Chats, parallelOptions, async (chat, token) =>
+        await Parallel.ForEachAsync(chats.ChatIds, parallelOptions, async (id, token) =>
         {
-            var messages = await mediator.Send(new GetChatNewMessageParams<TdApi.Message>(chat.Id), cancellationToken);
+            var messages = await mediator.Send(new GetChatNewMessageParams<TdApi.Message>(id), cancellationToken);
             foreach (var message in messages.Messages)
                 try
                 {
-                    // TODO: исправить publish model from Message to InsertMessageParams
-                    await rabbit.PublishAsync(exchangeKey, routingKey, queueKey, message, token);
+                    if (!(message.Content is TdApi.MessageContent.MessageText messageText))
+                        return;
+                    var text = messageText.Text.Text;
+
+                    if (string.IsNullOrWhiteSpace(text) || text.Length < 10)
+                        return;
+
+                    await rabbit.PublishAsync(exchangeKey, routingKey, queueKey,
+                        new InsertMessageParams(message.ChatId, text), token);
                 }
                 catch (Exception e)
                 {

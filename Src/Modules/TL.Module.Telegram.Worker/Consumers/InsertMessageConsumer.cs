@@ -64,7 +64,7 @@ public class InsertMessageConsumer(IServiceScopeFactory serviceScopeFactory) : I
             { "x-dead-letter-exchange", dlxExchange },
             { "x-dead-letter-routing-key", dlxQueueKey }
         };
-        
+
         await channel.ExchangeDeclareAsync(exchangeKey, ExchangeType.Direct,
             cancellationToken: cancellationToken);
 

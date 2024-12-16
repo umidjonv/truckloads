@@ -2,13 +2,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TL.Module.Telegram.Domain.Entities;
 
-public class TelegramAllowedChat
+public class TelegramChat
 {
     public Guid Id { get; set; }
 
     [MaxLength(255)] public required string ChatName { get; set; }
 
-    [MaxLength(255)] public required string ChatId { get; set; }
+    public long ChatId { get; set; }
 
     public bool IsActive { get; set; }
 

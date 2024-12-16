@@ -53,7 +53,7 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
 
         await channel.ExchangeDeclareAsync(dlxExchange, ExchangeType.Direct,
             cancellationToken: cancellationToken);
-        
+
         await channel.QueueDeclareAsync(dlxQueueKey,
             true,
             false,
@@ -68,7 +68,7 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
             { "x-dead-letter-exchange", dlxExchange },
             { "x-dead-letter-routing-key", dlxQueueKey }
         };
-        
+
         await channel.ExchangeDeclareAsync(exchangeKey, ExchangeType.Direct,
             cancellationToken: cancellationToken);
 

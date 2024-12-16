@@ -9,7 +9,7 @@ public interface ITelegramDbContext
 
     DbSet<TelegramMessage> Messages { get; }
 
-    DbSet<TelegramAllowedChat> AllowedChats { get; set; }
+    DbSet<TelegramChat> Chats { get; set; }
 
     DbSet<TelegramUser> Users { get; set; }
 

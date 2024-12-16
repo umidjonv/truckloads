@@ -9,7 +9,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\Shared\TL.Shared.Common\TL.Shared.Common.csproj"/>
         <ProjectReference Include="..\..\Shared\TL.Shared.Core\TL.Shared.Core.csproj"/>
-        <ProjectReference Include="..\TL.Module.Telegram.Bot\TL.Module.Telegram.Bot.csproj" />
+        <ProjectReference Include="..\TL.Module.Telegram.Bot\TL.Module.Telegram.Bot.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

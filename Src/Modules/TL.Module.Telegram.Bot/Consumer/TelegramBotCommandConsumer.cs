@@ -30,7 +30,7 @@ public class TelegramBotCommandConsumer(
         var exchangeKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:ExchangeKey"];
         var routingKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:RoutingKey"];
         var queueKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:QueueKey"];
-        
+
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
@@ -169,7 +169,7 @@ public class TelegramBotCommandConsumer(
 
         await SendRequestAsync(content, cancellationToken);
     }
-   
+
     private async Task HandleCallbackQuery(CallbackQuery callbackQuery, CancellationToken cancellationToken)
     {
         var callbackData = callbackQuery.Data;
@@ -182,9 +182,9 @@ public class TelegramBotCommandConsumer(
         {
             await using var scope = serviceScopeFactory.CreateAsyncScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            
+
             var insertUserParams = new InsertUserParams(chatId.Value, userId, userName);
-            var res= await mediator.Send(insertUserParams, cancellationToken);
+            var res = await mediator.Send(insertUserParams, cancellationToken);
             if (res)
             {
                 var content = new StringContent(
@@ -203,17 +203,18 @@ public class TelegramBotCommandConsumer(
 
     private async Task HandleDefaultCommand(long chatId, CancellationToken cancellationToken)
     {
-        var unknownCommandMessage = "Sorry, I didn't understand this command. Please use one of the following commands:\n\n" +
-                                    "/start - Start the bot\n" +
-                                    "/help - Get help\n" +
-                                    "To subscribe: Click the 'Subscribe' button.";
+        var unknownCommandMessage =
+            "Sorry, I didn't understand this command. Please use one of the following commands:\n\n" +
+            "/start - Start the bot\n" +
+            "/help - Get help\n" +
+            "To subscribe: Click the 'Subscribe' button.";
 
         var content = new StringContent($"{{\"chat_id\": \"{chatId}\", \"text\": \"{unknownCommandMessage}\"}}",
             Encoding.UTF8, "application/json");
 
         await SendRequestAsync(content, cancellationToken);
     }
-    
+
     private async Task SendRequestAsync(StringContent content, CancellationToken cancellationToken)
     {
         try
@@ -245,5 +246,4 @@ public class TelegramBotCommandConsumer(
             logger.LogError("[{0}] Error sending request: {1}", nameof(TelegramBotCommandConsumer), ex.Message);
         }
     }
-
 }
