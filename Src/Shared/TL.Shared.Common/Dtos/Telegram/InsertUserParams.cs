@@ -1,3 +1,5 @@
-﻿namespace TL.Shared.Common.Dtos.Telegram;
+﻿using MediatR;
 
-public record InsertUserParams();
+namespace TL.Shared.Common.Dtos.Telegram;
+
+public record InsertUserParams(long ChatId, long UserId,string UserName) : IRequest<bool>;

@@ -1,6 +1,5 @@
-﻿namespace TL.Shared.Common.Dtos.Telegram;
+﻿using MediatR;
+using TL.Shared.Common.Dtos.Telegram;
 
-public class GetAllUserParams
-{
-    
-}
+
+public class GetAllUserParams() : IRequest<List<UserParams>>;

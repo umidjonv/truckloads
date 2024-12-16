@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
+using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,7 @@ using RabbitMQ.Client.Events;
 using RabbitMQ.Client;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using TL.Shared.Common.Dtos.Telegram;
 
 namespace TL.Module.Telegram.Bot.Consumer;
 
@@ -28,6 +30,7 @@ public class TelegramBotCommandConsumer(
         var exchangeKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:ExchangeKey"];
         var routingKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:RoutingKey"];
         var queueKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:QueueKey"];
+        
 
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
@@ -137,17 +140,16 @@ public class TelegramBotCommandConsumer(
     private async Task HandleStartCommand(long chatId, CancellationToken cancellationToken)
     {
         var json = $@"
-          {{
-              ""chat_id"": ""{chatId}"",
-              ""text"": ""Assalomu alaykum! Obuna bo'lish uchun tugmani bosing."",
-              ""reply_markup"": {{
-                  ""inline_keyboard"": [
-                      [
-                          {{ ""text"": ""Obuna bo'lish"", ""callback_data"": ""subscribe"" }}
-                      ]
-                  ]
-              }}
-          }}";
+                 {{
+                     ""chat_id"": ""{chatId}"",
+                     ""text"": ""Hello! You need to subscribe to use this bot. Please click the button to subscribe."",
+                     ""reply_markup"": {{
+                         ""inline_keyboard"": [
+                             [
+                                 {{ ""text"": ""Subscribe"", ""callback_data"": ""subscribe"" }}
+                                          ]
+                     }}
+                 }}";
 
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -157,45 +159,54 @@ public class TelegramBotCommandConsumer(
     private async Task HandleHelpCommand(long chatId, CancellationToken cancellationToken)
     {
         var helpMessage =
-            "Salom! Bu botni ishlatish uchun obuna bo'lishingiz kerak. Quyidagi komandalardan foydalanishingiz mumkin:\n\n" +
-            "/start - Botni ishga tushurish\n" +
-            "/help - Yordam olish\n" +
-            "Obuna bo'lish uchun: 'Obuna bo'lish' tugmasini bosing.";
+            "Hello! You need to subscribe to use this bot. You can use the following commands:\n:\n\n" +
+            "/start - Start the bot\n" +
+            "/help - Get help\n" +
+            "To subscribe: Click the 'Subscribe' button.\n";
 
         var content = new StringContent($"{{\"chat_id\": \"{chatId}\", \"text\": \"{helpMessage}\"}}", Encoding.UTF8,
             "application/json");
 
         await SendRequestAsync(content, cancellationToken);
     }
-
+   
     private async Task HandleCallbackQuery(CallbackQuery callbackQuery, CancellationToken cancellationToken)
     {
         var callbackData = callbackQuery.Data;
         var userId = callbackQuery.From.Id;
         var userName = callbackQuery.From.Username ?? "NoUsername";
         var chatId = callbackQuery.Message?.Chat.Id;
-        var message = $"Rahmat, @{userName}! Siz obuna bo'ldingiz.";
+        var message = $"Thank you!, @{userName}! You have subscribed.";
 
         if (callbackData == "subscribe" && chatId.HasValue)
         {
-            var content = new StringContent(
-                $"{{\"chat_id\": \"{chatId}\", \"text\": \"{message}\"}}",
-                Encoding.UTF8,
-                "application/json");
-
-            await SendRequestAsync(content, cancellationToken);
+            await using var scope = serviceScopeFactory.CreateAsyncScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
             
-            // TODO: insert to database
-            // await mediator.Send(userInfo, token);
+            var insertUserParams = new InsertUserParams(chatId.Value, userId, userName);
+            var res= await mediator.Send(insertUserParams, cancellationToken);
+            if (res)
+            {
+                var content = new StringContent(
+                    $"{{\"chat_id\": \"{chatId}\", \"text\": \"{message}\"}}",
+                    Encoding.UTF8,
+                    "application/json");
+
+                await SendRequestAsync(content, cancellationToken);
+            }
+            else
+            {
+                logger.LogError("Failed to save user information to the database.");
+            }
         }
     }
 
     private async Task HandleDefaultCommand(long chatId, CancellationToken cancellationToken)
     {
-        var unknownCommandMessage = "Kechirasiz, bu buyruqni tushunmadim. Quyidagi komandalardan foydalaning:\n\n" +
-                                    "/start - Botni ishga tushurish\n" +
-                                    "/help - Yordam olish\n" +
-                                    "Obuna bo'lish uchun: 'Obuna bo'lish' tugmasini bosing.";
+        var unknownCommandMessage = "Sorry, I didn't understand this command. Please use one of the following commands:\n\n" +
+                                    "/start - Start the bot\n" +
+                                    "/help - Get help\n" +
+                                    "To subscribe: Click the 'Subscribe' button.";
 
         var content = new StringContent($"{{\"chat_id\": \"{chatId}\", \"text\": \"{unknownCommandMessage}\"}}",
             Encoding.UTF8, "application/json");

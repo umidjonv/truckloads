@@ -14,10 +14,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\Shared\TL.Shared.Core\TL.Shared.Core.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Handlers\" />
+      <ProjectReference Include="..\TL.Module.Telegram\TL.Module.Telegram.csproj" />
     </ItemGroup>
 
 </Project>
