@@ -11,20 +11,12 @@ using TL.Shared.Core.MessageBroker;
 
 namespace TL.Module.Telegram.Bot.Consumer;
 
-public interface IUserNotifyConsumer
-{
-    Task ConsumeQueueMessagesAsync(CancellationToken cancellationToken);
-    Task NotifyAllUsersAsync(NewPostParams newPostParams, CancellationToken cancellationToken);
-}
-
-public class UserNotifyConsumer(IServiceScopeFactory serviceScopeFactory,
-    ILogger<TelegramBotCommandConsumer> logger,
+public class UserNotifyConsumer(
+    IServiceScopeFactory serviceScopeFactory,
+    ILogger<UserNotifyConsumer> logger,
     IHttpClientFactory httpClientFactory) : IUserNotifyConsumer
 {
-    // TODO: get all users from TelegramDbContext.Users
-    // then
-    // send to telegram by chatId and userId
-    public async Task ConsumeQueueMessagesAsync(CancellationToken cancellationToken)
+    public async Task Consume(CancellationToken cancellationToken)
     {
         await using var scope = serviceScopeFactory.CreateAsyncScope();
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
@@ -33,27 +25,28 @@ public class UserNotifyConsumer(IServiceScopeFactory serviceScopeFactory,
         var exchangeKey = configuration[$"{nameof(UserNotifyConsumer)}:ExchangeKey"];
         var routingKey = configuration[$"{nameof(UserNotifyConsumer)}:RoutingKey"];
         var queueKey = configuration[$"{nameof(UserNotifyConsumer)}:QueueKey"];
-        
+
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
             logger.LogError(
-                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotUpdateConsumer)}:ExchangeKey is empty!");
+                $"[{nameof(UserNotifyConsumer)}] {nameof(UserNotifyConsumer)}:ExchangeKey is empty!");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(routingKey))
         {
             logger.LogError(
-                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotUpdateConsumer)}:RoutingKey is empty!");
+                $"[{nameof(UserNotifyConsumer)}] {nameof(UserNotifyConsumer)}:RoutingKey is empty!");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(queueKey))
         {
             logger.LogError(
-                $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotUpdateConsumer)}:QueueKey is empty!");
+                $"[{nameof(UserNotifyConsumer)}] {nameof(UserNotifyConsumer)}:QueueKey is empty!");
             return;
         }
+
         var (_, channel) = await rabbit.GetConnection();
 
         await channel.ExchangeDeclareAsync(exchangeKey, ExchangeType.Direct,
@@ -71,17 +64,14 @@ public class UserNotifyConsumer(IServiceScopeFactory serviceScopeFactory,
         var consumer = new AsyncEventingBasicConsumer(channel);
 
         consumer.ReceivedAsync += async (model, ea) =>
-        { 
+        {
             var body = ea.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
             try
             {
                 var newPostParams = JsonSerializer.Deserialize<NewPostParams>(message);
 
-                if (newPostParams!= null)
-                {
-                    await NotifyAllUsersAsync(newPostParams, cancellationToken);
-                }
+                if (newPostParams != null) await NotifyAllUsersAsync(newPostParams, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -93,17 +83,17 @@ public class UserNotifyConsumer(IServiceScopeFactory serviceScopeFactory,
             cancellationToken);
     }
 
-    public async Task NotifyAllUsersAsync(NewPostParams newPostParams, CancellationToken cancellationToken)
+    private async Task NotifyAllUsersAsync(NewPostParams newPostParams, CancellationToken cancellationToken)
     {
         await using var scope = serviceScopeFactory.CreateAsyncScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        
-        var users = await mediator.Send(new GetAllUserParams(),cancellationToken);
-        
+
+        var users = await mediator.Send(new GetAllUserParams(), cancellationToken);
+
         //TODO:
         // Message ko'rinishini to'g'rilash kerak
-        
-        string message = $@"{newPostParams.StartLocation} - {newPostParams.DestinationLocation}
+
+        var message = $@"{newPostParams.StartLocation} - {newPostParams.DestinationLocation}
                         Yuk - {newPostParams.Cargo}
                         {newPostParams.TypeOfTruck}
                         {newPostParams.Weight}
@@ -118,7 +108,7 @@ public class UserNotifyConsumer(IServiceScopeFactory serviceScopeFactory,
             await SendRequestAsync(content, cancellationToken);
         }
     }
-    
+
     private async Task SendRequestAsync(StringContent content, CancellationToken cancellationToken)
     {
         try
@@ -147,7 +137,7 @@ public class UserNotifyConsumer(IServiceScopeFactory serviceScopeFactory,
         }
         catch (Exception ex)
         {
-            logger.LogError("[{0}] Error sending request: {1}", nameof(TelegramBotCommandConsumer), ex.Message);
+            logger.LogError("[{0}] Error sending request: {1}", nameof(UserNotifyConsumer), ex.Message);
         }
     }
 }

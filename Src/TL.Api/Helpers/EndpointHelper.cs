@@ -20,7 +20,7 @@ public static class EndpointHelper
 
         return services;
     }
-    
+
     public static IApplicationBuilder MapEndpoints(
         this WebApplication app,
         RouteGroupBuilder? routeGroupBuilder = null)
@@ -31,10 +31,7 @@ public static class EndpointHelper
         IEndpointRouteBuilder builder =
             routeGroupBuilder is null ? app : routeGroupBuilder;
 
-        foreach (IEndpoint endpoint in endpoints)
-        {
-            endpoint.MapEndpoint(builder);
-        }
+        foreach (var endpoint in endpoints) endpoint.MapEndpoint(builder);
 
         return app;
     }

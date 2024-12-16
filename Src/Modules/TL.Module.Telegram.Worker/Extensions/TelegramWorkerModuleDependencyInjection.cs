@@ -10,6 +10,7 @@ public static class TelegramWorkerModuleDependencyInjection
     {
         services.AddSingleton<IParseMessageJob, ParseMessageJob>();
         services.AddSingleton<IInsertMessageConsumer, InsertMessageConsumer>();
+        services.AddSingleton<IParseChatsJob, ParseChatsJob>();
 
         return services;
     }
