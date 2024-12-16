@@ -12,14 +12,8 @@ using TL.Shared.Core.MessageBroker;
 
 namespace TL.Module.Telegram.Bot.Consumer;
 
-public interface ITelegramBotUpdateConsumer : IUpdateHandler
-{
-    Task StartReceiving(CancellationToken cancellationToken = default);
-}
-
 public class TelegramBotUpdateConsumer(
-    IServiceScopeFactory serviceScopeFactory,
-    ILogger<TelegramBotUpdateConsumer> logger) : ITelegramBotUpdateConsumer
+    IServiceScopeFactory serviceScopeFactory) : ITelegramBotUpdateConsumer, IUpdateHandler
 {
     public async Task StartReceiving(CancellationToken cancellationToken = default)
     {
@@ -49,6 +43,9 @@ public class TelegramBotUpdateConsumer(
     public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source,
         CancellationToken cancellationToken)
     {
+        using var scope = serviceScopeFactory.CreateAsyncScope();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<TelegramBotUpdateConsumer>>();
+        
         logger.LogError($"Xatolik bor {exception}");
         return Task.CompletedTask;
     }
@@ -56,13 +53,15 @@ public class TelegramBotUpdateConsumer(
     private async Task SendMessageToQueue(Update update, CancellationToken cancellationToken)
     {
         await using var scope = serviceScopeFactory.CreateAsyncScope();
-        
+
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-        
+
         var exchangeKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:ExchangeKey"];
         var routingKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:RoutingKey"];
         var queueKey = configuration[$"{nameof(TelegramBotUpdateConsumer)}:QueueKey"];
         
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<TelegramBotUpdateConsumer>>();
+
         if (string.IsNullOrWhiteSpace(exchangeKey))
         {
             logger.LogError(
@@ -83,7 +82,7 @@ public class TelegramBotUpdateConsumer(
                 $"[{nameof(TelegramBotCommandConsumer)}] {nameof(TelegramBotCommandConsumer)}:QueueKey is empty!");
             return;
         }
-        
+
         var rabbit = scope.ServiceProvider.GetRequiredService<IRabbitMqConnectionManager>();
 
         await rabbit.PublishAsync(exchangeKey, routingKey, queueKey, update, cancellationToken);

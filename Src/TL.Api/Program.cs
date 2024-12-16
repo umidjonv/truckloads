@@ -1,5 +1,6 @@
 using System.Reflection;
 using Hangfire;
+using Hangfire.InMemory;
 using Hangfire.PostgreSql;
 using Mapster;
 using TL.Api.Helpers;
@@ -7,6 +8,7 @@ using TL.Module.AIProcessing.Worker.Consumers;
 using TL.Module.AIProcessing.Worker.Extensions;
 using TL.Module.AIProcessing.Worker.Jobs;
 using TL.Module.Telegram.Bot.Consumer;
+using TL.Module.Telegram.Bot.Extensions;
 using TL.Module.Telegram.Extensions;
 using TL.Module.Telegram.Worker.Consumers;
 using TL.Module.Telegram.Worker.Extensions;
@@ -31,6 +33,7 @@ builder.Services.AddRabbitMqConnectionManager();
 builder.Services.AddTelegramWorkerModule();
 builder.Services.AddAIProcessingModule();
 builder.Services.AddTelegramModule(builder.Configuration);
+builder.Services.AddTelegramBotModule();
 
 builder.Services.AddHangfire(configuration =>
 {
@@ -38,11 +41,9 @@ builder.Services.AddHangfire(configuration =>
         .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
         .UseSimpleAssemblyNameTypeSerializer()
         .UseRecommendedSerializerSettings()
-        .UsePostgreSqlStorage(options =>
-        {
-            options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("HangfireConnectionString"));
-        });
+        .UseInMemoryStorage();
 });
+
 builder.Services.AddHangfireServer();
 
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
