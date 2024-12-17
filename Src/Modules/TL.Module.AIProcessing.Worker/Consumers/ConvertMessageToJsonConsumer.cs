@@ -93,51 +93,64 @@ public class ConvertMessageToJsonConsumer(IServiceScopeFactory serviceScopeFacto
         await channel.BasicQosAsync(0, (ushort)Environment.ProcessorCount, false, cancellationToken);
     }
 
-    private static int _counter = 0;
-    private static SemaphoreSlim _semaphore = new(47);
 
+    private static int _processedCount = 0;
+    private const int MaxProcessedCount = 47;
+    private static DateTime _lastResetTime = DateTime.UtcNow;
+    private static readonly SemaphoreSlim Throttler = new(MaxProcessedCount);
+    
     private async Task Receive(IChannel channel, BasicDeliverEventArgs ea, CancellationToken cancellationToken)
     {
-        if (_counter > 45)
+        await Throttler.WaitAsync(cancellationToken);
+    
+        try
         {
-            _counter = 0;
-            await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
+            await using var scope = serviceScopeFactory.CreateAsyncScope();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<ConvertMessageToJsonConsumer>>();
+    
+            if ((DateTime.UtcNow - _lastResetTime).TotalMinutes >= 1)
+            {
+                _lastResetTime = DateTime.UtcNow;
+                Interlocked.Exchange(ref _processedCount, 0);
+            }
+    
+            if (Interlocked.Increment(ref _processedCount) > MaxProcessedCount)
+            {
+                logger.LogWarning("Rate limit exceeded. Waiting for next minute.");
+                await channel.BasicNackAsync(ea.DeliveryTag, false, true, cancellationToken);
+                return;
+            }
+    
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            var message = Encoding.UTF8.GetString(ea.Body.ToArray());
+    
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                var result = await mediator.Send(new SendPostToAIParams(message), cancellationToken);
+                try
+                {
+                    var mongo = scope.ServiceProvider.GetRequiredService<IMongoConnectionManager>();
+                    var collection = mongo.GetCollection<PostsCollectionDto>(nameof(PostsCollectionDto));
+    
+                    var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+    
+                    await collection.InsertManyAsync(mapper.Map<List<PostsCollectionDto>>(result.Posts),
+                        cancellationToken: cancellationToken);
+    
+                    await channel.BasicAckAsync(ea.DeliveryTag, false, cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    logger.LogError("[{0}] Insert post to mongo failed. Sending to DLX. Details: {1}",
+                        nameof(ConvertMessageToJsonConsumer), e.Message);
+    
+                    await channel.BasicNackAsync(ea.DeliveryTag, false, false, cancellationToken);
+                }
+            }
         }
-
-        await using var scope = serviceScopeFactory.CreateAsyncScope();
-
-        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-
-        var message = Encoding.UTF8.GetString(ea.Body.ToArray());
-
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<ConvertMessageToJsonConsumer>>();
-
-        if (!string.IsNullOrWhiteSpace(message))
+        finally
         {
-            var result = await mediator.Send(new SendPostToAIParams(message), cancellationToken);
-            try
-            {
-                var mongo = scope.ServiceProvider.GetRequiredService<IMongoConnectionManager>();
-                var collection = mongo.GetCollection<PostsCollectionDto>(nameof(PostsCollectionDto));
-
-                var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
-
-                await collection.InsertManyAsync(mapper.Map<List<PostsCollectionDto>>(result.Posts),
-                    cancellationToken: cancellationToken);
-
-                await channel.BasicAckAsync(ea.DeliveryTag, false,
-                    cancellationToken);
-
-                _counter += 1;
-            }
-            catch (Exception e)
-            {
-                logger.LogError("[{0}] Insert post to mongo failed. Sending to DLX. Details: {1}",
-                    nameof(ConvertMessageToJsonConsumer), e.Message);
-
-                await channel.BasicNackAsync(ea.DeliveryTag, false, false,
-                    cancellationToken);
-            }
+            Throttler.Release();
         }
     }
 }
