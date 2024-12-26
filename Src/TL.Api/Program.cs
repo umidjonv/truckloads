@@ -1,7 +1,5 @@
 using System.Reflection;
 using Hangfire;
-using Hangfire.InMemory;
-using Hangfire.PostgreSql;
 using Mapster;
 using TL.Api.Helpers;
 using TL.Module.AIProcessing.Worker.Consumers;
@@ -10,7 +8,6 @@ using TL.Module.AIProcessing.Worker.Jobs;
 using TL.Module.Telegram.Bot.Consumer;
 using TL.Module.Telegram.Bot.Extensions;
 using TL.Module.Telegram.Extensions;
-using TL.Module.Telegram.Worker.Consumers;
 using TL.Module.Telegram.Worker.Extensions;
 using TL.Module.Telegram.Worker.Jobs;
 using TL.Shared.Core.MessageBroker;
@@ -58,7 +55,6 @@ var cancellationTokenSource = new CancellationTokenSource();
 
 var backgroundJobClient = scope.ServiceProvider.GetRequiredService<IBackgroundJobClient>();
 backgroundJobClient.Enqueue<IConvertMessageToJsonConsumer>(s => s.Consume(cancellationTokenSource.Token));
-backgroundJobClient.Enqueue<IInsertMessageConsumer>(s => s.Consume(cancellationTokenSource.Token));
 backgroundJobClient.Enqueue<ITelegramBotUpdateConsumer>(s => s.StartReceiving(cancellationTokenSource.Token));
 backgroundJobClient.Enqueue<ITelegramBotCommandConsumer>(s => s.ExecuteAsync(cancellationTokenSource.Token));
 backgroundJobClient.Enqueue<IUserNotifyConsumer>(s => s.Consume(cancellationTokenSource.Token));

@@ -19,7 +19,7 @@ public class InsertChatHandler(
         await using var scope = serviceScopeFactory.CreateAsyncScope();
         var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
         if (!await _context.Chats.AnyAsync(
-                s => s.ChatId == request.ChatId || s.ChatName.Trim().ToLower() == request.ChatName.Trim().ToLower(),
+                s => s.ChatId == request.ChatId,
                 cancellationToken))
         {
             await _context.Chats.AddAsync(mapper.Map<TelegramChat>(request), cancellationToken);

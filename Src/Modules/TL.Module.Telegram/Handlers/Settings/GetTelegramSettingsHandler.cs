@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using TL.Module.Telegram.Domain;
 using TL.Shared.Common.Dtos.Telegram;
 
-namespace TL.Module.Telegram.Handlers;
+namespace TL.Module.Telegram.Handlers.Settings;
 
 public class GetTelegramSettingsHandler(IDbContextFactory<TelegramDbContext> contextFactory, IMapper mapper)
     : IRequestHandler<GetTelegramSettingsParams, GetTelegramSettingsResult?>

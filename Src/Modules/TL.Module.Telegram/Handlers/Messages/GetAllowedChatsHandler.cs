@@ -1,8 +1,6 @@
 using MapsterMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using TdLib;
 using TL.Module.Telegram.Domain;
 using TL.Shared.Common.Dtos.Telegram;
 

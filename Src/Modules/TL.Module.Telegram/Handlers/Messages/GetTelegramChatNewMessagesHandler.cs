@@ -6,12 +6,12 @@ using TL.Shared.Common.Dtos.Telegram;
 
 namespace TL.Module.Telegram.Handlers.Messages;
 
-public class GetChatNewMessagesHandler(
-    ILogger<GetChatNewMessagesHandler> logger,
+public class GetTelegramChatNewMessagesHandler(
+    ILogger<GetTelegramChatNewMessagesHandler> logger,
     IMediator mediator)
-    : IRequestHandler<GetChatNewMessageParams<TdApi.Message>, GetChatNewMessageResult<TdApi.Message>>
+    : IRequestHandler<GetChatNewMessageParams<TdApi.Message>, GetTelegramChatNewMessageResult<TdApi.Message>>
 {
-    public async Task<GetChatNewMessageResult<TdApi.Message>> Handle(GetChatNewMessageParams<TdApi.Message> request,
+    public async Task<GetTelegramChatNewMessageResult<TdApi.Message>> Handle(GetChatNewMessageParams<TdApi.Message> request,
         CancellationToken cancellationToken)
     {
         var settings = await mediator.Send(new GetTelegramSettingsParams(), cancellationToken);
@@ -50,6 +50,6 @@ public class GetChatNewMessagesHandler(
             lastMessageId = history.Messages_[^1].Id;
         }
 
-        return new GetChatNewMessageResult<TdApi.Message>(messages);
+        return new GetTelegramChatNewMessageResult<TdApi.Message>(messages);
     }
 }
