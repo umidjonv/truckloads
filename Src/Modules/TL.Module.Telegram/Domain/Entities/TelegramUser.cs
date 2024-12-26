@@ -1,3 +1,5 @@
+using System;
+
 namespace TL.Module.Telegram.Domain.Entities;
 
 public class TelegramUser

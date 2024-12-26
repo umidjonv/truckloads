@@ -1,4 +1,7 @@
-﻿using MediatR;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using TdLib;
 using TL.Module.Telegram.Extensions;
@@ -22,9 +25,7 @@ public class GetAuthorizationStateHandler(
             throw new ArgumentException("Settings not found!");
         }
 
-        var client = new TdClient();
-
-        await client.SetParameters(settings.ApiHash, settings.ApiId);
+        var client = await TelegramExtension.GetClient(settings.ApiHash, settings.ApiId);
 
         var state = await client.GetAuthorizationStateAsync();
 

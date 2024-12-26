@@ -1,4 +1,7 @@
-﻿using MediatR;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using TdLib;
 using TL.Module.Telegram.Extensions;
@@ -20,13 +23,13 @@ public class CheckAuthorizationCodeHandler(
             throw new ArgumentException("Settings not found!");
         }
 
-        var client = new TdClient();
-        await client.SetParameters(settings.ApiHash, settings.ApiId);
+        var client = await TelegramExtension.GetClient(settings.ApiHash, settings.ApiId);
+        ;
 
         var stateResult = await mediator.Send(new GetTelegramAuthorizationStateParams<TdApi.AuthorizationState>(),
             cancellationToken);
 
-        if (stateResult.State is not TdApi.AuthorizationState.AuthorizationStateWaitCode)
+        if (stateResult.State is not TdApi.AuthorizationState.AuthorizationStateWaitTdlibParameters.AuthorizationStateWaitCode)
             throw new ArgumentException("Invalid authorization. Current state is {0}",
                 stateResult.State.ToString());
 

@@ -1,6 +1,9 @@
 using System.Reflection;
+using System.Threading;
 using Hangfire;
 using Mapster;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using TL.Api.Helpers;
 using TL.Module.AIProcessing.Worker.Consumers;
 using TL.Module.AIProcessing.Worker.Extensions;
@@ -55,9 +58,9 @@ var cancellationTokenSource = new CancellationTokenSource();
 
 var backgroundJobClient = scope.ServiceProvider.GetRequiredService<IBackgroundJobClient>();
 backgroundJobClient.Enqueue<IConvertMessageToJsonConsumer>(s => s.Consume(cancellationTokenSource.Token));
-backgroundJobClient.Enqueue<ITelegramBotUpdateConsumer>(s => s.StartReceiving(cancellationTokenSource.Token));
-backgroundJobClient.Enqueue<ITelegramBotCommandConsumer>(s => s.ExecuteAsync(cancellationTokenSource.Token));
-backgroundJobClient.Enqueue<IUserNotifyConsumer>(s => s.Consume(cancellationTokenSource.Token));
+// backgroundJobClient.Enqueue<ITelegramBotUpdateConsumer>(s => s.StartReceiving(cancellationTokenSource.Token));
+// backgroundJobClient.Enqueue<ITelegramBotCommandConsumer>(s => s.ExecuteAsync(cancellationTokenSource.Token));
+// backgroundJobClient.Enqueue<IUserNotifyConsumer>(s => s.Consume(cancellationTokenSource.Token));
 
 var recurringJobClient = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 recurringJobClient.AddOrUpdate<IPostNotifierJob>(

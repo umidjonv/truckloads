@@ -1,4 +1,7 @@
-﻿using MapsterMapper;
+﻿using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using MapsterMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TL.Module.Telegram.Domain;
@@ -9,16 +12,23 @@ namespace TL.Module.Telegram.Handlers.Settings;
 public class GetTelegramSettingsHandler(IDbContextFactory<TelegramDbContext> contextFactory, IMapper mapper)
     : IRequestHandler<GetTelegramSettingsParams, GetTelegramSettingsResult?>
 {
-    private readonly ITelegramDbContext _context = contextFactory.CreateDbContext();
 
     public async Task<GetTelegramSettingsResult?> Handle(GetTelegramSettingsParams request,
         CancellationToken cancellationToken)
     {
-        var settings = await _context.Settings
-            .AsNoTracking()
-            .OrderByDescending(s => s.CreatedDate)
-            .FirstOrDefaultAsync(cancellationToken);
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
 
-        return settings is null ? null : mapper.Map<GetTelegramSettingsResult>(settings);
+        if (!await context.Settings.AnyAsync(cancellationToken: cancellationToken))
+            return null;
+
+        var settings = await context.Settings
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var setting = settings
+            .OrderByDescending(s => s.CreatedDate)
+            .FirstOrDefault();
+
+        return setting is null ? null : mapper.Map<GetTelegramSettingsResult?>(setting);
     }
 }

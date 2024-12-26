@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TL.Module.Telegram.Domain;
@@ -9,11 +13,11 @@ public class GetAllChatsHandler(
     IDbContextFactory<TelegramDbContext> contextFactory)
     : IRequestHandler<GetAllChatsParams, List<GetAllChatsResult>>
 {
-    private readonly ITelegramDbContext _context = contextFactory.CreateDbContext();
-
-    public Task<List<GetAllChatsResult>> Handle(GetAllChatsParams request, CancellationToken cancellationToken)
+    public async Task<List<GetAllChatsResult>> Handle(GetAllChatsParams request, CancellationToken cancellationToken)
     {
-        return _context.Chats
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+
+        return await context.Chats
             .AsNoTracking()
             .Select(s => new GetAllChatsResult(s.ChatId, s.ChatName, s.IsAllowed))
             .ToListAsync(cancellationToken: cancellationToken);

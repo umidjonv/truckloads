@@ -10,12 +10,11 @@ using TL.Shared.Common.Dtos.Telegram;
 
 namespace TL.Module.Telegram.Handlers.Messages;
 
-public class GetTelegramChatNewMessagesHandler(
-    ILogger<GetTelegramChatNewMessagesHandler> logger,
-    IMediator mediator)
-    : IRequestHandler<GetChatNewMessageParams<TdApi.Message>, GetTelegramChatNewMessageResult<TdApi.Message>>
+public class GetAllTelegramChatsHandler(
+    ILogger<GetAllTelegramChatsHandler> logger,
+    IMediator mediator) : IRequestHandler<GetAllTelegramChatsParams<TdApi.Chat>, GetAllTelegramChatsResult<TdApi.Chat>>
 {
-    public async Task<GetTelegramChatNewMessageResult<TdApi.Message>> Handle(GetChatNewMessageParams<TdApi.Message> request,
+    public async Task<GetAllTelegramChatsResult<TdApi.Chat>> Handle(GetAllTelegramChatsParams<TdApi.Chat> request,
         CancellationToken cancellationToken)
     {
         var settings = await mediator.Send(new GetTelegramSettingsParams(), cancellationToken);
@@ -35,25 +34,18 @@ public class GetTelegramChatNewMessagesHandler(
             throw new ArgumentException("Invalid authorization. Current state is {0}",
                 stateResult.State.ToString());
 
-        var messages = new List<TdApi.Message>();
-        var lastMessageId = 0L;
-        while (!cancellationToken.IsCancellationRequested)
+        var chatsData = await client.ExecuteAsync(new TdApi.GetChats
         {
-            var history = await client.ExecuteAsync(new TdApi.GetChatHistory()
+            Limit = 20
+        });
+
+        var chats = new List<TdApi.Chat>();
+        for (var i = 0; i < chatsData.ChatIds.Length; i++)
+            chats.Add(await client.ExecuteAsync(new TdApi.GetChat
             {
-                ChatId = request.Id,
-                Limit = 100,
-                FromMessageId = lastMessageId,
-                OnlyLocal = false
-            });
+                ChatId = chatsData.ChatIds[i]
+            }));
 
-            if (history.Messages_.Length == 0)
-                break;
-
-            messages.AddRange(history.Messages_);
-            lastMessageId = history.Messages_[^1].Id;
-        }
-
-        return new GetTelegramChatNewMessageResult<TdApi.Message>(messages);
+        return new GetAllTelegramChatsResult<TdApi.Chat>(chats);
     }
 }

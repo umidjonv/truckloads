@@ -1,3 +1,6 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TL.Module.Telegram.Domain;
@@ -8,14 +11,13 @@ namespace TL.Module.Telegram.Handlers.Messages;
 public class SwitchAllowChatHandler(IDbContextFactory<TelegramDbContext> contextFactory)
     : IRequestHandler<SwitchAllowChatParams>
 {
-    private readonly ITelegramDbContext _context = contextFactory.CreateDbContext();
-
     public async Task Handle(SwitchAllowChatParams request, CancellationToken cancellationToken)
     {
-        var chat = await _context.Chats.FirstOrDefaultAsync(s => s.ChatId == request.ChatId, cancellationToken);
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var chat = await context.Chats.FirstOrDefaultAsync(s => s.ChatId == request.ChatId, cancellationToken);
         ArgumentNullException.ThrowIfNull(chat, "Chat");
 
         chat.IsAllowed = request.Allow;
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 }
