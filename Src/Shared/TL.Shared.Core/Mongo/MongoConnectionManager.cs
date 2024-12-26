@@ -10,7 +10,7 @@ public class MongoConnectionManager : IMongoConnectionManager
     public MongoConnectionManager(IConfiguration configuration)
     {
         var client = new MongoClient(configuration.GetConnectionString("MongoConnectionString"));
-        Database = client.GetDatabase(configuration.GetConnectionString("Mongo:Database"));
+        Database = client.GetDatabase(configuration.GetSection("Mongo:Database").Value);
     }
 
     public IMongoCollection<T> GetCollection<T>(string collectionName)

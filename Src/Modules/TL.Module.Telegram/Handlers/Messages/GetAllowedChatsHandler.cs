@@ -1,8 +1,9 @@
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using MapsterMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using TdLib;
 using TL.Module.Telegram.Domain;
 using TL.Shared.Common.Dtos.Telegram;
 
@@ -12,13 +13,14 @@ public class GetAllowedChatsHandler(
     IDbContextFactory<TelegramDbContext> contextFactory)
     : IRequestHandler<GetAllowedChatIdsParams, GetAllowedChatsResult>
 {
-    private readonly ITelegramDbContext _context = contextFactory.CreateDbContext();
 
     public async Task<GetAllowedChatsResult> Handle(GetAllowedChatIdsParams request,
         CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+
         return new GetAllowedChatsResult(
-            await _context.Chats
+            await context.Chats
                 .AsNoTracking()
                 .Where(s => s.IsAllowed)
                 .Select(s => s.ChatId)

@@ -1,4 +1,5 @@
-using TL.Shared.Common.Dtos.Telegram;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace TL.Module.Telegram.Bot.Consumer;
 

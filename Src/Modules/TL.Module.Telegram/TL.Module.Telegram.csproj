@@ -2,20 +2,29 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
+        <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="8.0.11"/>
+        <PackageReference Include="Npgsql" Version="8.0.6" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11"/>
         <PackageReference Include="TDLib" Version="1.8.29"/>
         <PackageReference Include="TDLib.Api" Version="1.8.29"/>
+        <PackageReference Include="tdlib.native" Version="1.8.29" />
+        <PackageReference Include="tdlib.native.win-x64" Version="1.8.29" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\Shared\TL.Shared.Common\TL.Shared.Common.csproj"/>
         <ProjectReference Include="..\..\Shared\TL.Shared.Core\TL.Shared.Core.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Telegram.Td">
+        <HintPath>..\TDLib\Telegram.Td.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

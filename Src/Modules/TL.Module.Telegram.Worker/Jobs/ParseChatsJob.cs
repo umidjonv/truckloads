@@ -1,3 +1,6 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -18,7 +21,7 @@ public class ParseChatsJob(IServiceScopeFactory serviceScopeFactory) : IParseCha
         var state = await mediator.Send(new GetTelegramAuthorizationStateParams<TdApi.AuthorizationState>(),
             cancellationToken);
 
-        if (state.State is not TdApi.AuthorizationState.AuthorizationStateReady)
+        if (state.State is not TdApi.AuthorizationState.AuthorizationStateWaitTdlibParameters.AuthorizationStateReady)
         {
             logger.LogError("[{0}] Telegram is not in authorization state", nameof(ParseMessageJob));
             return;

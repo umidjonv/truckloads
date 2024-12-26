@@ -1,8 +1,12 @@
+using System;
+using System.Net.Http;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using RabbitMQ.Client;
 using MediatR;
 using RabbitMQ.Client.Events;
